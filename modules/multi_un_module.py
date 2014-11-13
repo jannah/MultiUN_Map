@@ -5,15 +5,17 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[177]:
+# In[91]:
 
 import nltk
 import re
 import os
 import chardet
+import string
 from unidecode import unidecode
 from progressbar import AnimatedMarker, Bar, BouncingBar,                            Counter, ETA, Percentage, ProgressBar, SimpleProgress, FileTransferSpeed
-
+from nltk.corpus import brown
+show_pbars = True
 # PATH_TO_FILES = "C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\txt\\en"
 # PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
 
@@ -21,46 +23,9 @@ PATH_TO_FILES = "..\\data\\multiUN.en\\un\\txt\\en"
 PATH_TO_XML_FILES="..\\data\\multiUN.en\\un\\xml\\en"
 
 
-### Load Files
-
-# In[178]:
-
-def load_files(year = None, raw=True):
-    years = []
-    if year is None:
-        years = [ year for year in os.listdir(PATH_TO_FILES) if not '.txt' in year or '_OLD_' in year]
-    else:
-        years = [str(year)]
-    data = {}
-    pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(years)).start()
-    for i in range(len(years)):
-        y = years[i]
-        data[y] = load_files_by_year(y, raw)
-        pbar.update(i+1)
-    pbar.finish()
-    return data
-
-
-def load_files_by_year(year, raw=True):
-    texts = []
-    file_type = 'raw' if raw else 'txt'
-    full_path = os.path.join(PATH_TO_FILES, year, file_type)        
-    files = os.listdir(full_path)
-    pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
-    for i in range(len(files)):
-        filename = os.path.join(full_path, files[i])
-        with open(filename, 'r') as f:
-            text = f.read()
-            text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
-            texts.append(text) #Keeping each file in a seperate array element
-            pbar2.update(i+1)
-    pbar2.finish()
-    return texts    
-
-
 ## Fix Unicode and Incomplete Sentences
 
-# In[179]:
+# In[89]:
 
 def fix_unicode(s):
     text = ''
@@ -99,9 +64,46 @@ def fix_incomplete_sentences(para):
     return sents
 
 
+### Load Files
+
+# In[56]:
+
+def load_files(year = None, raw=True):
+    years = []
+    if year is None:
+        years = [ year for year in os.listdir(PATH_TO_FILES) if not '.txt' in year or '_OLD_' in year]
+    else:
+        years = [str(year)]
+    data = {}
+    pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(years)).start()
+    for i in range(len(years)):
+        y = years[i]
+        data.update(load_files_by_year(y, raw))
+        pbar.update(i+1)
+    pbar.finish()
+    return data
+
+
+def load_files_by_year(year, raw=True):
+    texts = []
+    file_type = 'raw' if raw else 'txt'
+    full_path = os.path.join(PATH_TO_FILES, year, file_type)        
+    files = os.listdir(full_path)
+    pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
+    for i in range(len(files)):
+        filename = os.path.join(full_path, files[i])
+        with open(filename, 'r') as f:
+            text = f.read()
+            text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
+            texts.append(text) #Keeping each file in a seperate array element
+            pbar2.update(i+1)
+    pbar2.finish()
+    return texts    
+
+
 ## Load XML Files
 
-# In[180]:
+# In[74]:
 
 from lxml import etree
 #data ={}
@@ -117,7 +119,7 @@ def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True):
         pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(years)).start()
     for i in range(len(years)):
         y = years[i]
-        data[y] = load_xml_files_by_year(y, path, show_pbar)
+        data.update(load_xml_files_by_year(y, path, show_pbar))
         if show_pbar:
             pbar.update(i+1)
     if show_pbar:
@@ -129,52 +131,68 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True):
     full_path = os.path.join(path, year)    
 #     print full_path
     files = [fname for fname in os.listdir(full_path) if fname.endswith('.xml')]
-    if show_pbar:
+    if show_pbar and len(files)>0:
         pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
     for i in range(len(files)):
         f = files[i]
         filename = os.path.join(full_path, f)
-        documents[f]=[]
+       
+        
         #with open(filename, 'r') as f:
         tree = etree.parse(filename)
         root = tree.getroot()
+        documents[f]=dict(root.attrib)
+        documents[f]['year'] = year
         xparas =  root.getchildren()[0].getchildren()[0].getchildren()
+        content = []
         for xpara in xparas:
-           documents[f].append([fix_unicode(sent.text.strip()) for sent in xpara if len(sent.text.strip())>0])
+          content.append([fix_unicode(sent.text.strip()) for sent in xpara if len(sent.text.strip())>0])
+        documents[f]['content'] =  content
         #text = f.read()
         #text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
         #texts.append(text) #Keeping each file in a seperate array element
         if show_pbar:
             pbar2.update(i+1)
-    if show_pbar:
+    if show_pbar and len(files)>0:
         pbar2.finish()
     return documents
 
 
 
-def flatten_document_structure_paragraphs(doc_dict):
-    print 'flattening paragraphs'
-    flat = [fix_incomplete_sentences(para) for year in doc_dict for doc in doc_dict[year] for para in doc_dict[year][doc]]
+# def flatten_document_structure_paragraphs(doc_dict):
+#     print 'flattening paragraphs'
+#     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
+#     return flat
+
+ 
+
+
+### Extract Paragraphs and Sentences
+
+# Functions to extract sentence or paragraph-sentence lists from document dictionary
+
+# In[76]:
+
+def extract_paragraphs(doc_dict, merge_paragraphs=False):
+    flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
+    if merge_paragraphs:
+        flat = [" ".join(para) for para in flat]
     return flat
-def flatten_document_structure(doc_dict):
+
+def extract_sentences(doc_dict):
     print 'flattening'
-    text = [fix_incomplete_sentences(para) for year in doc_dict for doc in doc_dict[year] for para in doc_dict[year][doc]]
+    text = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
     text = [sent for para in text for sent in para]
         
     return text
-   
-
-def flatten_document_structure_long(doc_dict):
-    return flatten_document_structure(doc_dict)
-#     text = [ sent for year in doc_dict for doc in doc_dict[year] for para in doc_dict[year][doc] for sent in para]
 
 
 ### Sentence Tokenizers
 
-# In[181]:
+# In[90]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
-def tokenize_sentences(text, use_nltk_tokenizer = False ):
+def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
     sents = []
     if use_nltk_tokenizer:
 
@@ -184,7 +202,7 @@ def tokenize_sentences(text, use_nltk_tokenizer = False ):
         #split the document by \n and remove any empty line and extra whitespace
         sents = [sent.strip() for sent in text.split('\n') if len(sent.strip())>0] 
     return sents
-def tokenize_sentences2(text, use_nltk_tokenizer = False ):
+def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
     sents = []
     global sent_tokenizer
     if use_nltk_tokenizer:
@@ -200,7 +218,7 @@ def tokenize_sentences2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[182]:
+# In[79]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -229,7 +247,11 @@ def print_sentence_statistics(sentences):
 
 ## Word Tokenizer
 
-# In[183]:
+# Create word tokens from sentences
+# * pattern1: no punctuation
+# * pattern2: include punctuations
+
+# In[80]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -252,11 +274,11 @@ def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords
     tokens =  [token for token in tokens                   if ((remove_stopwords and token.lower() not in english_stopwords) or not remove_stopwords)                   and ((alnum_only and token.isalnum()) or not alnum_only)
                   and ((alpha_only and token.isalpha()) or not alpha_only)]
     return tokens
-
-def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, remove_stopwords=False, use_pattern = 1, show_pbar = False):
+# tokenize words but keep sentences seperate
+def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, remove_stopwords=False, use_pattern = 1, show_pbar=show_pbars):
     sent_tokens = []
     if show_pbar:
-        pbar = ProgressBar(widgets=["Tokenizing senteces", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(sentences)).start()
+        pbar = ProgressBar(widgets=["Tokenizing sentences", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(sentences)).start()
     i = 0
     for sent in sentences:
         sent_token = tokenize_text(sent, alnum_only=alnum_only, alpha_only = alpha_only, remove_stopwords=remove_stopwords, use_pattern=use_pattern)
@@ -271,7 +293,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[184]:
+# In[81]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -299,24 +321,59 @@ def print_word_stats(tokens):
 
 ## Part of Speech Taggers
 
-# In[185]:
+# 
+# This is a manually tagged tagger of cities and countries from the gazetteers corpus. I also appended a special tag or United Nations because the tagger kept detecting United as a verb. 
+# 
+# I am using custom tags (NPLOC and NPORG) because I don't want them to be mixed with other NPs while having the chunker detect them as a sub class of NP. United Nations was especially important because it occurs alot and is United is flagged as a verb which throws off the chunker, especially the verb object chunker.
+# 
+# I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-def build_backoff_tagger (train_sents, default='NN'):
+# In[82]:
+
+#location/organization tagger
+def get_location_tagger_tags():
+    from nltk.corpus import gazetteers as gz
+    pos_tags_locations =[[('United', 'NPORG'), ('Nations', 'NPORG')],
+                         [('Working', 'NPORG'), ('Party', 'NPORG')]]
+    pos_tags_locations +=[[(word, 'NPLOC') for word in words.split(' ') if word not in english_stopwords] for words in gz.words()]
+    '''
+#   pos_tags_locations += [[(words, 'NPLOC') ]for words in gz.words() ]
+#   pos_tags_locations = [(words, 'NPLOC') for words in [gzwords for gzwords in gz.words() if len(gzwords.split(' '))>2]][:90]
+    pos_tags_locations+=[(r'\w* Republic \w*', 'NPLOC'),(r'\w* Kingdom \w*', 'NPLOC'),('United Nations', 'NPORG'),('Working Party', 'NPORG')]
+    '''
+    
+    return pos_tags_locations
+
+#the tagger here can be a 3 stage tagger or 5 state if the location tagger is included
+#note that the location tagger is used first to ensure the location/orgainzations are detected properly
+def build_backoff_tagger (train_sents, default='NN', include_location_tagger=False):
     t0 = nltk.DefaultTagger(default)
     t1 = nltk.UnigramTagger(train_sents, backoff=t0)
     t2 = nltk.BigramTagger(train_sents, backoff=t1)
-    return t2
-def get_brown_tagger(category = None):
+    t4=t2
+    if include_location_tagger:
+        t3 = nltk.RegexpTagger([(r'UN[A-Z]*', 'NPORG')], backoff=t2)
+        t4 = nltk.UnigramTagger(get_location_tagger_tags(), backoff=t3) #tag using the custom tagger first if requested
+    return t4
+
+def build_location_tagger():
+    t0 = nltk.DefaultTagger('U')
+    return nltk.BigramTagger(get_location_tagger_tags(), backoff=t0)
+
+def get_brown_tagger(category = None, include_location_tagger=False):
     if category:
-        return build_backoff_tagger(brown.tagged_sents(categories=category))
+        return build_backoff_tagger(brown.tagged_sents(categories=category), include_location_tagger=include_location_tagger)
     else:
-        return build_backoff_tagger(brown.tagged_sents())
+        return build_backoff_tagger(brown.tagged_sents(), include_location_tagger=include_location_tagger)
+    
 def get_default_treebank_tagger():
     return nltk.data.load('taggers\maxent_treebank_pos_tagger\english.pickle')
 
-def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(), show_pbar = False):
+#Tag the sentences based on the selected tagger
+
+def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(), show_pbar=show_pbars):
     if show_pbar:
-        pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(tokenized_sentences)).start()
+        pbar = ProgressBar(widgets=["tagging sentences", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(tokenized_sentences)).start()
     i = 0
     tagged_sentences = []
     for sent in tokenized_sentences:
@@ -327,44 +384,74 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
     if show_pbar:
         pbar.finish()
     return tagged_sentences
-    
 
 
 ## Text Chunker
 
-# In[186]:
+# My pride an joy chunker tries to do alot. I experimented heavily with it in previous assignments to ensure it captures complex objects. I am targeting 2 main classes:
+# * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
+# * **VNS**: Verb noun subjects (or who did what)
 
-def get_chunker(grammer=None, tag_set=None):
+# In[83]:
+
+def remove_punctuation(text):
+    return "".join(c for c in text if c not in string.punctuation)
+#it assumes brown tag set and proper nouns as default parameters. I found brown to be best in detecting proper nouns
+def get_chunker(grammer=None, tag_set=None, target='PNS'):
     if not grammer:
-        if tag_set is None or type=='treebank':
-            grammer = r"""PNS: {<DT|JJ|NN|NNS|NNP|NNPS>+<IN>*<DT|JJ|NN|NNS|NNP|NNPS>*<NNP|NNPS><CD>*}
-                          {<DT|JJ|NN|NNS|NNP|NNPS>*<NNP|NNPS><CD>*}
+        #not used here
+        if tag_set=='treebank':
+            grammer = r"""PNS: {<DT|JJ.*|N.*>+<IN>*<DT|J.*|N.*>*<NNP.*><CD>*}
+                          {<DT|J.*|N.*>*<NNP.*><CD>*}
                             """
-        elif tag_set=='brown':
-            DJNP = "<DT|JJ|JJ\$|JJ+JJ|JJR+CS|JJS|JJT|JJ-TL|JJ-HL|FW-JJ|FW-JJR|VBG-TL|VBN-TL"                +"|NN|NN\$|NN\$-TL|NN-HL|NN-TL|NNS|NNS-HL|NNS-TL|NNS-TL-HL|FW-NN|FW-NNS|FW-NN-TL"                +"|NP|NP\$|NP-HL|NP-TL|NPS|FW-NP|FW-NPS>"
-            #proper nouns
-            NPS = "<NP|NP\$|NP-HL|NP-TL|NPS|FW-NP|FW-NPS>" 
+        elif tag_set is None or tag_set=='brown':
+            if target=='PNS':
+                #words that precede or folllow proper nouns that are part of it (e.g. UN commission for xxx)
+                DJNP = "<DT|J.*|FW-J.*|VBG.*|VBN.*"                    +"|N.*|FW-N.*"                    +"|NP.*|FW-NP.*>"
+                #proper nouns
+                NPS = "<NP.*|FW-NP.*>" 
 
-            grammer = r"PNS: {"+DJNP+"+<IN|IN-TL>*"+DJNP+"*"+NPS+"<CD|MD>*}"+"\n{"+DJNP+"*"+NPS+"<CD|CD-TL|MD>*}" 
+                grammer = r"PNS: {"+DJNP+"+<IN.*>*"+DJNP+"*"+NPS+"<CD|MD>*}"+"\n{"+DJNP+"*"+NPS+"<CD|CD-TL|MD|N.*>*}"
+            
+            elif target=='VNS':
+                #verbs and teh different nouns that come before it or after it
+                grammer  = r"""VNS: {<N.*|J.*>*<VB.*>+<CD|TO|IN|CC|DT|PRP>*<DT|J.*|N.*>*<N.*|J.*>}
+                        {<N.*|J.*>+<CD|TO|IN|CC|DT|PRP>*<DT|J.*|N.*>*<VB.*>+}
+                         """
+        #not used here
         elif tag_set=='brown_simple':
             grammer = r"""PNS: {<DET|ADJ|N>*<NP><NUM>*}
                             {<DET|ADJ|N>+<IN>*<DET|ADJ|N><NP><NUM>*}"""
-        
     return nltk.RegexpParser(grammer)
-
-def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS',                      print_output=True, limit=0, randomize= False, show_pbar = False):
+# returns chunk trees based on teh chunker and target chosesn
+# randomize and limit are for testing purposues. They allow the chunker to run on a limited number of random sentences
+def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS', limit=0, randomize= False, show_pbar=show_pbars):
     chunks = []
     limit = limit if limit>0 else len(tagged_sents)
     i=0
     if show_pbar:
-        pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=limit).start()
+        pbar = ProgressBar(widgets=["Chunking ", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=limit).start()
     import random
     for index in range(limit):
         sent_index = random.randint(0, len(tagged_sents)-1) if randomize else index
         sent = tagged_sents[sent_index]
-        result = chunker.parse(sent) 
+        if len(sent)>0:
+            result = chunker.parse(sent) 
+            chunks.append(result)
+        i+=1
+        if show_pbar:
+            pbar.update(i)
+    if show_pbar:
+        pbar.finish()
+    return chunks
+#extracts the target chunks from the tree. I seperated this because in some cases I need the trees
+def extract_target_from_chunks(raw_chunks, target='PNS',print_output=False, print_leaves = False):
+    chunks=[]
+    for result in raw_chunks:
         phrase_leaves = [subtree.leaves() for subtree in  result.subtrees() if subtree.node==target]
-        words = [" ".join([word.encode('utf-8') for (word,tag) in leaf]) for leaf in phrase_leaves ]
+        if print_leaves:
+            print phrase_leaves
+        words = [" ".join([word for (word,tag) in leaf]) for leaf in phrase_leaves ]
         if len(words)>0:
             chunks.append(words)
         if print_output:
@@ -372,31 +459,220 @@ def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS',             
             print "\t".join([tag for (word, tag) in sent])
             print "\n".join(['%d\t%s'%(j+1, words[j]) for j in range(len(words))])
             print '\n'
-#         print result
-        i+=1
-        if show_pbar:
-            pbar.update(i)
-    if show_pbar:
-        pbar.finish()
+        
     return [phrase for phrases in chunks for phrase in phrases]
+#flattens the trees but doesn't remove anything. It only groups the target one tuple. 
+# This helps generate collocations based on complex chunker grammer which was very useful
+def flatten_chunks(chunks, target='PNS'):
+    flat_chunks = []
+    for chunk in chunks:
+        flat_chunk=[]
+        for n in chunk:
+            if isinstance(n, tuple):
+                flat_chunk.append(n)
+            elif isinstance(n, nltk.tree.Tree):
+                flat_node = (" ".join([word for (word, tag) in n.leaves()]), n.node)
+                flat_chunk.append(flat_node)
+        flat_chunks.append(flat_chunk)
+    return flat_chunks
+
+
+
+### Process Chunks to generate chunk Frequency Distrubtions
+
+# * Named Entities using a multi stage chunker
+# * Verb objects
+
+# In[84]:
+
+def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
+    if not tagged_sentences:
+        sent_tokens = sent_tokens if sent_tokens else             tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
+        tagger = get_brown_tagger(include_location_tagger=True)
+    tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger, show_pbar=show_pbars)
+    #get the proper noun chunks from teh chunker
+    nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS', show_pbar=show_pbars)
+    nchunks = extract_target_from_chunks(nchunks, target='PNS')
+    # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
+    if remove_months:
+        import calendar
+        nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 and chunk not in calendar.month_name]
+    
+    vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS', show_pbar=show_pbars)
+    vchunks = extract_target_from_chunks(vchunks, target='VNS')
+#     vchunks = [chunk for chunk in vchunks if chunk not in nchunks]
+    nchunks_fd = nltk.FreqDist(nchunks)
+    vchunks_fd = nltk.FreqDist(vchunks)
+    return print_FreqDists([nchunks_fd, vchunks_fd], titles=['Proper Nouns', 'Verb Objects'], csv=True)
+
+
+## Collocations 
+
+# There are two collocation implementations here:
+# * word based: collocation of individual words
+# * chunk based: collocation using a whole chunker grammer element (e.g. PNS). This will treat the whole element as one words and generate collocation of other words with it. this helps especially when dealing with multi-words country or organization names
+# 
+# The output is four finders nbests:
+# (bigram, trigram) x (pmi, chi_sq)
+
+# In[85]:
+
+from nltk.collocations import *
+#find pure word frequency collocations
+#it doesn't matter whether I pass tagged sentences or not since I am focusing on words only
+def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_limit = 20):
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences,alpha_only = True,                                                                         remove_stopwords=True, use_pattern = 1, show_pbar=show_pbars)
+    word_tokens = [word for sent in sent_tokens for word in sent]
+#     print word_tokens[:5]
+    bigram_measures = nltk.collocations.BigramAssocMeasures()
+    trigram_measures = nltk.collocations.TrigramAssocMeasures()
+    finder = BigramCollocationFinder.from_words(word_tokens)
+    finder3 = TrigramCollocationFinder.from_words(word_tokens)
+    finder.apply_freq_filter(filter_limit)
+    finder3.apply_freq_filter(filter_limit)
+    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
+    f1= finder.nbest(bigram_measures.pmi, finder_limit)
+    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
+    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
+    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
+    return f1, f2,f3,f4
+
+#get the colloations based on chunks    
+def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=get_brown_tagger(include_location_tagger=True),                              target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
+    #I can pass pre-tagged sentences if needed
+    if sentences:
+        sent_tokens = tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
+        tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger, show_pbar=show_pbars)
+    
+    chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
+    chunks = get_chunks(tagged_sentences,chunker=chunker, target = target,show_pbar=show_pbars )
+    flat_chunks = flatten_chunks(chunks, target=target)
+    flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
+    
+    bigram_measures = nltk.collocations.BigramAssocMeasures()
+    trigram_measures = nltk.collocations.TrigramAssocMeasures()
+    finder = BigramCollocationFinder.from_words(flat_chunk_tokens)
+    finder3 = TrigramCollocationFinder.from_words(flat_chunk_tokens)
+    
+    #after some testing, I found that many collocations are numeric so I am filtering out non alpha words
+    #This filters out any pairs that don't included the target chunk grammer
+    finder.apply_ngram_filter(lambda (w1, t1), (w2,t2): target not in (t1,t2) or not w1.isalpha() or not w2.isalpha())
+    finder3.apply_ngram_filter(lambda (w1, t1), (w2,t2), (w3, t3):                                target not in (t1,t2,t3) or not w1.isalpha() or not w2.isalpha() or not w3.isalpha())
+    finder.apply_freq_filter(filter_limit)
+    finder3.apply_freq_filter(filter_limit)
+    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
+    f1= finder.nbest(bigram_measures.pmi, finder_limit)
+    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
+    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
+    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
+    return f1, f2,f3,f4
+
+
+
+## Frequent Terms
+
+# These modules help generate an ngram frequncy distribution. It takes n as an input to plut any number ngrams.
+# 
+# It also takes other options about the text (e.g. remove stopwords or lower case everything). 
+
+# In[86]:
+
+from nltk.stem.snowball import SnowballStemmer
+snowball_stemmer = SnowballStemmer("english")
+
+
+def get_normalized_word(token,stem_words=False, lower_case=False):
+    if stem_words and len(token)>1:
+        try:
+            return snowball_stemmer.stem(token)
+        except Exception, e:
+            print token, e
+            return token
+    elif lower_case:
+        return token.lower()
+    else:
+        return token
+    #I wanted to keep CAP words CAPs because the mostly reflect abbreviations but some common words appear as all caps in headers
+    '''if token.isupper(): 
+        return token
+    else:
+        return token.lower()
+        '''
+   
+    
+def get_normalzed_ngram(ngram, stem_words=False, lower_case=False):
+    return [get_normalized_word(word, stem_words, lower_case) for word in ngram]
+
+#it can take either tokeinzed or text sentences. the output is a frequency distribution of ngrams
+def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnum_only = False, remove_stopwords=False, stem_words = False, lower_case=False):
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=alnum_only, remove_stopwords=remove_stopwords, use_pattern = 2)
+    ngrams = [" ".join(get_normalzed_ngram(ngram, stem_words, lower_case))                         for sent in sent_tokens for ngram in nltk.ngrams(sent, ngram_length) ]
+    fd_ngrams = nltk.FreqDist(ngrams)
+    return fd_ngrams
+
+
+
+## Processing NGrams
+
+# Generates 5 different frequency distributions:
+# * Unigrams (not very useful)
+# * Unigrams with stemming (not very useful)
+# * Bigrams (n=2)
+# * Trigrams (n=3)
+# * Quadgrams (n=4) 
+# 
+# All ngrams are alpha numeric, lowercase, and without stopwords
+
+# In[87]:
+
+def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
+    unigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 1, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    unigrams_stem_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  1, alnum_only=True,                                     remove_stopwords=True, lower_case=True, stem_words=True)
+    bigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 2, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    trigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 3, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    quadgrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  4, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    return print_FreqDists([unigrams_fd,unigrams_stem_fd, bigrams_fd,trigrams_fd, quadgrams_fd],                           titles=['Unigram', 'Stemed Unigram', 'Bigrams', 'Trigrams', 'Quadgrams'], limit=limit, csv=True)
+  
+
+
+# In[87]:
+
+
+
+
+# In[87]:
+
+
+
+
+# In[87]:
+
+
 
 
 ## Printing Functions
 
-# In[187]:
+# These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
+
+# In[88]:
 
 def print_FreqDist(fd, limit =0):
     if limit == 0:
         limit = len(fd.items())
     print "\n".join(["%d\t%s"%( value, word) for (word, value) in fd.items()[:limit]])
+    
 #prints multiple frequency distribution next to each other to compare results.
 def print_FreqDists(fds, titles=None, limit = 50, csv=False):
+    return print_csv_table(preprint_FreqDists(fds, titles, limit, csv=True))
+
+def preprint_FreqDists(fds, titles=None, limit = 50, csv=False):
     lines = ''
     html_str =''
     if limit ==0:
         limit = max([len(fd) for fd in fds])
     titles = titles if titles else [i for i in range(len(fds))]
-    lines+=",".join(['phrase %s,frequency %s'%(t,t) for t in titles])+'\n'
+    lines+=",".join(['%s phrase,%s frequency'%(t,t) for t in titles])+'\n'
     for i in range(limit):
         line = '%d'%(i+1)
         for fd in fds:
@@ -406,9 +682,9 @@ def print_FreqDists(fds, titles=None, limit = 50, csv=False):
                 key =fd.items()[i][0]
                 val = fd.items()[i][1]
             if csv:
-                line='%s,%s,%d'%(line,key,val)
+                line='%s,"%s",%d'%(line,key,val)
             else:
-                line += '%d\t%s\t'%(val, key)
+                line='%s\t%s\t%d'%(line,key,val)
        
 #         print line
         lines+='%s\n'%line
@@ -417,33 +693,63 @@ def print_FreqDists(fds, titles=None, limit = 50, csv=False):
 def print_csv_table(csv_lines):
     import pandas, io
     if isinstance(csv_lines, list):
-        csv_lines = str("\n".join(csv_lines))
-    plines= pandas.read_csv(io.BytesIO(csv_lines))
-    plines
-
+        csv_lines = "\n".join(csv_lines)
+    
+    plines= pandas.read_csv(io.BytesIO(str(csv_lines)))
+    return plines
+    
 def print_pos_tagged_sentences(tagged_sentences):
     formatted_sents = []
-    import pandas, io
+    
+    import io
+    max_tokens = max([len(sent) for sent in tagged_sentences])
+    formatted_sents.append(",".join([' ' for i in range(max_tokens)]))
     for sent in tagged_sentences:
-        words = [word for (word, tag) in sent]
-        tags = [tag for (word, tag) in sent]
-        csv_line = "%s\n%s"%(",".join(words), ",".join(tags))
-        plines=pandas.read_csv(io.BytesIO(str(csv_line).decode('utf-8')))
-        plines
-        formatted_sents.append(",".join(words))
-        formatted_sents.append(",".join(tags))
-#         formatted_sents.append('\n')
-#     print "\n".join(formatted_sents)
-#     print_csv_table(formatted_sents)
+        words = ['"%s"'%word for (word, tag) in sent]
+        tags = ['"%s"'%tag for (word, tag) in sent]
+        if len(words)<max_tokens:
+            words+=[' ' for i in range(max_tokens - len(words))]
+            tags+=[' ' for i in range(max_tokens - len(tags))]
+        csv_line = "%s\n%s\n%s\n"%(",".join(words), ",".join(tags), ",".join([' ' for i in range(max_tokens)]))
+        formatted_sents.append(','.join(words))
+        formatted_sents.append(','.join(tags))
+        formatted_sents.append( ",".join([' ' for i in range(max_tokens)]))
+    return formatted_sents
 
-
-# In[188]:
-
-# files = load_xml_files('ENERGY')
-
-
-# In[189]:
-
-# sents = flatten_document_structure_long(files)
-# sents[:15]
+#allow me to limit the number of chars in the output whithout whitespace. I am using a table output that generates tons of white space
+def shrink_output_text(text, char_limit=2500, count_whitespace = False):
+    text2 = [(i, str(text[i])) for i in range(len(text)) if text[i]!=' ']
+    if count_whitespace:
+        return text[:char_limit]
+    else:
+        try:
+            last_char_tuple = text2[len(text2)-1][0] if len(text2)<=char_limit else text2[char_limit][0]
+            return text[:last_char_tuple]
+        except Exception, e:
+            print e
+            print len(text2), char_limit
+            return text[:char_limit]
+        
+def print_collocations_finders(finders, chunked=False):
+    finders = list(finders)
+    if chunked:
+        
+        for i in range(len(finders)):
+#             print finders[i][:3]
+            finders[i] = [tuple([word_tag[0] for word_tag in item]) for item in finders[i] ]
+#             print finders[i][:3]
+    output = []
+    total_width = sum([len(finder[0]) for finder in finders])
+#     print total_width
+#     output.append(','.join([' ' for i in range(total_width + len(finders))]))
+    output.append('bigram pmi, , ,bigram chi_sq, , ,trigram pmi, , , ,tirgram chi_sq, , ' )
+    for i in range(len(finders[0])):
+        line = " ,"
+        for finder in finders:
+            if i< len(finder):
+                line+=",".join(finder[i])
+            line+=",|,"
+        line= line[:-4]
+        output.append(line)
+    return output
 

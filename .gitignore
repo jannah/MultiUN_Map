@@ -43,3 +43,8 @@ Temporary Items
 .apdisk
 
 .ipynb_checkpoints/
+
+
+#data files
+data/TOP_1000/
+data/TOP_100/

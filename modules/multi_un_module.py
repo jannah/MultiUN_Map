@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[164]:
+# In[177]:
 
 import nltk
 import re
@@ -14,12 +14,16 @@ import chardet
 from unidecode import unidecode
 from progressbar import AnimatedMarker, Bar, BouncingBar,                            Counter, ETA, Percentage, ProgressBar, SimpleProgress, FileTransferSpeed
 
-PATH_TO_FILES = "C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\txt\\en"  
+# PATH_TO_FILES = "C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\txt\\en"
+# PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
+
+PATH_TO_FILES = "..\\data\\multiUN.en\\un\\txt\\en"
+PATH_TO_XML_FILES="..\\data\\multiUN.en\\un\\xml\\en"
 
 
 ### Load Files
 
-# In[165]:
+# In[178]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -56,7 +60,7 @@ def load_files_by_year(year, raw=True):
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[166]:
+# In[179]:
 
 def fix_unicode(s):
     text = ''
@@ -97,9 +101,8 @@ def fix_incomplete_sentences(para):
 
 ## Load XML Files
 
-# In[167]:
+# In[180]:
 
-PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
 from lxml import etree
 #data ={}
 def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True):
@@ -147,6 +150,8 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True):
         pbar2.finish()
     return documents
 
+
+
 def flatten_document_structure_paragraphs(doc_dict):
     print 'flattening paragraphs'
     flat = [fix_incomplete_sentences(para) for year in doc_dict for doc in doc_dict[year] for para in doc_dict[year][doc]]
@@ -166,7 +171,7 @@ def flatten_document_structure_long(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[168]:
+# In[181]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def tokenize_sentences(text, use_nltk_tokenizer = False ):
@@ -195,7 +200,7 @@ def tokenize_sentences2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[169]:
+# In[182]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -224,9 +229,12 @@ def print_sentence_statistics(sentences):
 
 ## Word Tokenizer
 
-# In[170]:
+# In[183]:
 
-def tokenize_text(text, alnum_only = False, remove_stopwords=False, use_pattern = 1, custom_pattern = None):
+from nltk.corpus import stopwords
+english_stopwords = stopwords.words('english')
+
+def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords=False, use_pattern = 1):
     pattern1 = ["\w+[\-|']\w+", #words joined with '-' or words with ' in them \
                "(\w+/)+\w+", #document references and words that are seperated with '\' \
                "\([\w+\s*]\)", #words with parenthesis in them. this will exclude parenthisis \
@@ -237,20 +245,21 @@ def tokenize_text(text, alnum_only = False, remove_stopwords=False, use_pattern 
                "\$?\d+(\.\d+)?%?",
                "\.\.\.",
                "[.,?;]+"]
-    text = " ".join(text) if isinstance(text, list)== True else text
-    pattern  = custom_pattern if custom_pattern else pattern1 if use_pattern ==1 else pattern2
+    pattern  = pattern1 if use_pattern ==1 else pattern2
     pattern = "|".join(pattern)
+    text = " ".join(text) if isinstance(text, list)== True else text
     tokens = nltk.regexp_tokenize(text,pattern)
-    tokens =  [token for token in tokens                   if ((remove_stopwords and token.lower() not in english_stopwords) or not remove_stopwords)                   and ((alnum_only and token.isalnum()) or not alnum_only)]
+    tokens =  [token for token in tokens                   if ((remove_stopwords and token.lower() not in english_stopwords) or not remove_stopwords)                   and ((alnum_only and token.isalnum()) or not alnum_only)
+                  and ((alpha_only and token.isalpha()) or not alpha_only)]
     return tokens
 
-def tokenize_sentence_text(sentences, alnum_only = False, remove_stopwords=False, use_pattern = 1, custom_pattern=None, show_pbar = False):
+def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, remove_stopwords=False, use_pattern = 1, show_pbar = False):
     sent_tokens = []
     if show_pbar:
-        pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(sentences)).start()
+        pbar = ProgressBar(widgets=["Tokenizing senteces", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(sentences)).start()
     i = 0
     for sent in sentences:
-        sent_token = tokenize_text(sent, alnum_only, remove_stopwords, use_pattern, custom_pattern)
+        sent_token = tokenize_text(sent, alnum_only=alnum_only, alpha_only = alpha_only, remove_stopwords=remove_stopwords, use_pattern=use_pattern)
         sent_tokens.append(sent_token)
         i+=1
         if show_pbar:
@@ -262,7 +271,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, remove_stopwords=False
 
 ## Word Statistics
 
-# In[171]:
+# In[184]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -290,7 +299,7 @@ def print_word_stats(tokens):
 
 ## Part of Speech Taggers
 
-# In[172]:
+# In[185]:
 
 def build_backoff_tagger (train_sents, default='NN'):
     t0 = nltk.DefaultTagger(default)
@@ -323,7 +332,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 
 ## Text Chunker
 
-# In[173]:
+# In[186]:
 
 def get_chunker(grammer=None, tag_set=None):
     if not grammer:
@@ -374,7 +383,7 @@ def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS',             
 
 ## Printing Functions
 
-# In[174]:
+# In[187]:
 
 def print_FreqDist(fd, limit =0):
     if limit == 0:
@@ -428,12 +437,12 @@ def print_pos_tagged_sentences(tagged_sentences):
 #     print_csv_table(formatted_sents)
 
 
-# In[175]:
+# In[188]:
 
 # files = load_xml_files('ENERGY')
 
 
-# In[176]:
+# In[189]:
 
 # sents = flatten_document_structure_long(files)
 # sents[:15]

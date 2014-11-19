@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[19]:
+# In[20]:
 
 import nltk
 import re
@@ -20,12 +20,12 @@ show_pbars = True
 # PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
 
 PATH_TO_FILES = os.path.join("..","data","multiUN.en","un","txt","en")
-PATH_TO_XML_FILES=os.path.join("..","data","multiUN.en","un","xml,"en")
+PATH_TO_XML_FILES=os.path.join("..","data","multiUN.en","un","xml","en")
 
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[ ]:
+# In[21]:
 
 def fix_unicode(s):
     text = ''
@@ -66,7 +66,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[ ]:
+# In[22]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -103,7 +103,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[ ]:
+# In[23]:
 
 from lxml import etree
 #data ={}
@@ -172,7 +172,7 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, con
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[ ]:
+# In[24]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -190,7 +190,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[ ]:
+# In[25]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -219,7 +219,7 @@ def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[ ]:
+# In[26]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -252,7 +252,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[ ]:
+# In[27]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -294,7 +294,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[ ]:
+# In[28]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -329,7 +329,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[ ]:
+# In[29]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -393,7 +393,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[ ]:
+# In[30]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)

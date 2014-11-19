@@ -51,3 +51,6 @@ data/TOP_100/
 data/multiUN.en/un/xml/en/TOP_1000
 data/multiUN.en/un/xml/en/TOP_100
 data/pdf/
+util/output_all.json
+util/output_progress.json
+util/scrape_progress.txt

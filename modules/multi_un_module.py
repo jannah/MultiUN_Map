@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[91]:
+# In[19]:
 
 import nltk
 import re
@@ -19,13 +19,13 @@ show_pbars = True
 # PATH_TO_FILES = "C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\txt\\en"
 # PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
 
-PATH_TO_FILES = "..\\data\\multiUN.en\\un\\txt\\en"
-PATH_TO_XML_FILES="..\\data\\multiUN.en\\un\\xml\\en"
+PATH_TO_FILES = os.path.join("..","data","multiUN.en","un","txt","en")
+PATH_TO_XML_FILES=os.path.join("..","data","multiUN.en","un","xml,"en")
 
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[89]:
+# In[ ]:
 
 def fix_unicode(s):
     text = ''
@@ -66,7 +66,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[56]:
+# In[ ]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -103,11 +103,11 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[74]:
+# In[ ]:
 
 from lxml import etree
 #data ={}
-def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True):
+def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True, content=True):
     data = {}
     years = []
     if year is None:
@@ -119,14 +119,14 @@ def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True):
         pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(years)).start()
     for i in range(len(years)):
         y = years[i]
-        data.update(load_xml_files_by_year(y, path, show_pbar))
+        data.update(load_xml_files_by_year(y, path, show_pbar, content))
         if show_pbar:
             pbar.update(i+1)
     if show_pbar:
         pbar.finish()
     return data
 
-def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True):
+def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, content=True):
     documents = {}
     full_path = os.path.join(path, year)    
 #     print full_path
@@ -143,14 +143,15 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True):
         root = tree.getroot()
         documents[f]=dict(root.attrib)
         documents[f]['year'] = year
-        xparas =  root.getchildren()[0].getchildren()[0].getchildren()
-        content = []
-        for xpara in xparas:
-          content.append([fix_unicode(sent.text.strip()) for sent in xpara if len(sent.text.strip())>0])
-        documents[f]['content'] =  content
-        #text = f.read()
-        #text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
-        #texts.append(text) #Keeping each file in a seperate array element
+        if content:
+            xparas =  root.getchildren()[0].getchildren()[0].getchildren()
+            content = []
+            for xpara in xparas:
+              content.append([fix_unicode(sent.text.strip()) for sent in xpara if len(sent.text.strip())>0])
+            documents[f]['content'] =  content
+            #text = f.read()
+            #text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
+            #texts.append(text) #Keeping each file in a seperate array element
         if show_pbar:
             pbar2.update(i+1)
     if show_pbar and len(files)>0:
@@ -171,7 +172,7 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[76]:
+# In[ ]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -189,7 +190,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[90]:
+# In[ ]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -218,7 +219,7 @@ def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[79]:
+# In[ ]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -251,7 +252,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[80]:
+# In[ ]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -293,7 +294,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[81]:
+# In[ ]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -328,7 +329,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[82]:
+# In[ ]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -367,7 +368,7 @@ def get_brown_tagger(category = None, include_location_tagger=False):
         return build_backoff_tagger(brown.tagged_sents(), include_location_tagger=include_location_tagger)
     
 def get_default_treebank_tagger():
-    return nltk.data.load('taggers\maxent_treebank_pos_tagger\english.pickle')
+    return nltk.data.load('taggers/maxent_treebank_pos_tagger/english.pickle')
 
 #Tag the sentences based on the selected tagger
 
@@ -392,7 +393,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[83]:
+# In[ ]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -483,7 +484,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[84]:
+# In[ ]:
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
     if not tagged_sentences:
@@ -515,7 +516,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[85]:
+# In[ ]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -575,7 +576,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=get_br
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[86]:
+# In[ ]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -623,7 +624,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[87]:
+# In[ ]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -636,17 +637,17 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
   
 
 
-# In[87]:
+# In[ ]:
 
 
 
 
-# In[87]:
+# In[ ]:
 
 
 
 
-# In[87]:
+# In[ ]:
 
 
 
@@ -655,7 +656,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[88]:
+# In[ ]:
 
 def print_FreqDist(fd, limit =0):
     if limit == 0:

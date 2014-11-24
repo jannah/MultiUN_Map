@@ -1,4 +1,4 @@
-MODULES_PATH = '''..\\modules\\multi_un_module.py'''
+MODULES_PATH = '''../../modules/multi_un_module.py'''
 import imp
 NF = imp.load_source('multi_un_module', MODULES_PATH)
 import multi_un_module as mun
@@ -60,7 +60,7 @@ def scrape_list(docs):
         try:
             if len(docs)>0:
                 pbar = ProgressBar(widgets=[str(pid), ' ',SimpleProgress(),' ', Percentage(), Bar(), ETA()], maxval=len(docs)).start()
-                for (name, n, i, scrape_file, output_file) in docs:
+                for (name, n, i, scrape_file, output_file, scrape_missing_file) in docs:
             #         print name, n, i
                     data = scrape_item(driver, n, i)
 
@@ -84,8 +84,10 @@ def scrape_list(docs):
                             
                         if data is None or data == False:
                             missing.append((name, n, i))
+                            append_to_file(scrape_missing_file, n)
                     if data == False:
                         missing.append((name, n, i))
+                        append_to_file(scrape_missing_file, n)
                     elif data is not None:
                         result = (name, n, i,  data)
                         my_results.append(result)
@@ -223,10 +225,13 @@ if __name__ == '__main__':
     path = None
     SCRAPE_FILE = 'scrape_progress.txt'
     OUTPUT_FILE = 'output_progress.json'
+    META_FILE = 'docs_meta.json'
+    MISSING_FILE = 'missing.json'
+    SCRAPE_MISSING_FILE = 'scrape_missing.txt'
     import sys, os
     if len(sys.argv)>1:
         slices = int(sys.argv[1])
-    if len(sys.argv)>2 and sys.argv[2]=='all':
+    if len(sys.argv)>2 and sys.argv[2] in ['all', 'missing']:
         path = 'C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en'  
     
     if not os.path.exists(SCRAPE_FILE):
@@ -235,23 +240,35 @@ if __name__ == '__main__':
     if not os.path.exists(OUTPUT_FILE):
         f = file(OUTPUT_FILE, 'w')
         f.close()
+    if not os.path.exists(SCRAPE_MISSING_FILE):
+        f = file(SCRAPE_MISSING_FILE, 'w')
+        f.close()
 
     print 'using %d processes'%slices
     docs = None
     results = None
-    
-    if path is None:
-        docs = mun.load_xml_files_by_year("TOP_100", content=False)
+    if not os.path.exists(META_FILE):
+        if path is None:
+            docs = mun.load_xml_files_by_year("TOP_100", content=False)
+        else:
+            docs = mun.load_xml_files(path=path, content=False)
     else:
-        docs = mun.load_xml_files(path=path, content=False)
+        docs = json.load(open(META_FILE, 'rb'))
 
-    done_ns = []
-    with open(SCRAPE_FILE) as f:
-        done_ns = f.readlines()
-    done_ns = [str(item).strip() for item in done_ns]
-#     print done_ns
-#     with open(SCRAPE_FILE, 'a+b') as f:
-    doc_names = [(doc, docs[doc]['n'], docs[doc]['id'], SCRAPE_FILE, OUTPUT_FILE) for doc in docs if docs[doc]['n'] not in  done_ns]
+    
+    doc_names = []
+    if sys.argv[2] == 'missing':
+        missing = json.load(open(MISSING_FILE, 'rb'))
+        print 'scraping missing files only', len(missing)
+        doc_names = [(doc, docs[doc]['n'], docs[doc]['id'], SCRAPE_FILE, OUTPUT_FILE, SCRAPE_MISSING_FILE) 
+                     for doc in docs if docs[doc]['n'] in  missing]
+    else:
+        done_ns = []
+        with open(SCRAPE_FILE) as f:
+            done_ns = f.readlines()
+        done_ns = [str(item).strip() for item in done_ns]
+        doc_names = [(doc, docs[doc]['n'], docs[doc]['id'], SCRAPE_FILE, OUTPUT_FILE, SCRAPE_MISSING_FILE) 
+                     for doc in docs if docs[doc]['n'] not in  done_ns]
     print 'Total Items to process:', len(doc_names)
 #     docs = None
 #     doc_names = doc_names[:20]

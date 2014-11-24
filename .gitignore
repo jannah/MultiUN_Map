@@ -54,3 +54,12 @@ data/pdf/
 util/output_all.json
 util/output_progress.json
 util/scrape_progress.txt
+util/scrape/completed_scrape.json
+util/scrape/completed_scrape.json
+util/scrape/docs_meta.json
+util/scrape/missing.json
+util/scrape/output_all.json
+util/scrape/output_progress.zip
+util/scrape/scrape.json
+util/scrape/scrape_missing.txt
+util/scrape/scrape_progress.txt

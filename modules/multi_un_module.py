@@ -19,8 +19,23 @@ show_pbars = True
 # PATH_TO_FILES = "C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\txt\\en"
 # PATH_TO_XML_FILES="C:\\Users\\Hassan\\Documents\\iSchool\\NLP\\United Nations\\multiUN.en\\un\\xml\\en"
 
+<<<<<<< HEAD
 PATH_TO_FILES = os.path.join("..","data","multiUN.en","un","txt","en")
 PATH_TO_XML_FILES=os.path.join("..","data","multiUN.en","un","xml","en")
+=======
+
+### Load Data Path
+
+# In[34]:
+
+FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
+F_PATH = os.path.dirname(os.path.abspath(FILENAME))
+RELATIVE_PATH_TO_XML = 'data/multiUN.en/un/xml/en'
+RELATIVE_PATH_TO_TXT = 'data/multiUN.en/un/txt/en'
+PATH_TO_FILES = os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_TXT))
+# PATH_TO_XML_FILES=os.path.join("..","data","multiUN.en","un","xml","en")
+PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_XML))
+>>>>>>> origin/metadata-extraction
 
 
 ## Fix Unicode and Incomplete Sentences

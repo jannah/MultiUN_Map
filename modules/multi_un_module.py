@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[35]:
+# In[3]:
 
 import nltk
 import re
@@ -116,7 +116,7 @@ def load_files_by_year(year, raw=True):
 
 from lxml import etree
 #data ={}
-def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=True, content=True):
+def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=show_pbars, content=True):
     data = {}
     years = []
     if year is None:
@@ -646,14 +646,39 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
   
 
 
-# In[17]:
+## Extract Document Links
 
+# Extracts document references from text
 
+# In[8]:
 
-
-# In[17]:
-
-
+DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
+def extract_links_from_documents(docs, show_pbar=show_pbars):
+    links = {}
+    if show_pbar:
+        pbar = ProgressBar(widgets=["Extracting Outgoing Links ", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(docs)).start()
+    i = 0
+    doc_ids = dict([(docs[doc]['id'], doc) for doc in docs])
+    for doc in docs:
+        links[doc] ={'outgoing':[], 'incoming':[]}
+    for doc in docs:
+        olinks= extract_links_from_document(docs[doc])
+        for olink in olinks:
+            if olink in doc_ids:
+                links[doc_ids[olink]]['incoming'].append(docs[doc]['id'])
+        links[doc]['outgoing']=olinks
+        i+=1
+        if show_pbar:
+            pbar.update(i)
+    if show_pbar:
+        pbar.finish()
+    return links
+def extract_links_from_document(doc):
+    text = "\n".join([ " ".join(c) for c in doc['content']])
+    links = re.finditer(DOCUMENT_LINK_PATTERN, text)
+    result = [link.group(0) for link in links]
+    return result
+    
 
 
 # In[17]:

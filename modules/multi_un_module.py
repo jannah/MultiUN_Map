@@ -246,8 +246,11 @@ def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=Non
 
 def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, limit = None):
     load_doc_map()
-    if doc_name in MUN_MAP:
-        return {doc_name:MUN_MAP[doc_name]}
+    if doc_name:
+        if doc_name in MUN_MAP:
+            return {doc_name:MUN_MAP[doc_name]}
+        else:
+            term = doc_name
     result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
 #     print result
     if limit is not None:

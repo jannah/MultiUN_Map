@@ -34,5 +34,5 @@ def show():
     doc_name = request.args.get('doc_name', '')
     print doc_name
     document = mun.get_document(doc_name=doc_name)
-    return render_template('doc.html', doc_name=doc_name, document=document)
+    return render_template('doc.html', doc_name=doc_name, document=document, mun=mun)
     return 'showing'

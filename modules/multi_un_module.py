@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[1]:
+# In[21]:
 
 import nltk
 import re
@@ -21,10 +21,11 @@ show_pbars = True
 
 ### Load Data Path
 
-# In[2]:
+# In[22]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
+ROOT_CORPUS_DIR = ''
 RELATIVE_PATH_TO_XML = 'data/multiUN.en/un/xml/en'
 RELATIVE_PATH_TO_TXT = 'data/multiUN.en/un/txt/en'
 PATH_TO_FILES = os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_TXT))
@@ -34,7 +35,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[3]:
+# In[23]:
 
 def fix_unicode(s):
     text = ''
@@ -75,7 +76,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[4]:
+# In[24]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -112,7 +113,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[5]:
+# In[65]:
 
 from lxml import etree
 #data ={}
@@ -135,38 +136,6 @@ def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=show_pbars, 
         pbar.finish()
     return data
 
-def load_xml_files_by_year_old(year, path = PATH_TO_XML_FILES, show_pbar = True, content=True):
-    documents = {}
-    full_path = os.path.join(path, year)    
-#     print full_path
-    files = [fname for fname in os.listdir(full_path) if fname.endswith('.xml')]
-    if show_pbar and len(files)>0:
-        pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
-    for i in range(len(files)):
-        f = files[i]
-        filename = os.path.join(full_path, f)
-       
-        
-        #with open(filename, 'r') as f:
-        tree = etree.parse(filename)
-        root = tree.getroot()
-        documents[f]=dict(root.attrib)
-        documents[f]['year'] = year
-        if content:
-            xparas =  root.getchildren()[0].getchildren()[0].getchildren()
-            content = []
-            for xpara in xparas:
-              content.append([fix_unicode(sent.text.strip()) for sent in xpara if len(sent.text.strip())>0])
-            documents[f]['content'] =  content
-            #text = f.read()
-            #text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
-            #texts.append(text) #Keeping each file in a seperate array element
-        if show_pbar:
-            pbar2.update(i+1)
-    if show_pbar and len(files)>0:
-        pbar2.finish()
-    return documents
-
 def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, content=True):
     documents = {}
     full_path = os.path.join(path, year)    
@@ -184,13 +153,17 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, con
         pbar2.finish()
     return documents
 
+def get_year_from_filename(filename):
+    sep = '\\' if '\\' in filename else '/'
+    return str(filename.split(sep)[-2:-1][0])
 
-def load_xml_file(filename = None, doc_id=None, doc_n = None, path = None, content=True):
+
+def load_xml_file(filename = None, content=True, year = None):
     f = {}
     tree = etree.parse(filename)
     root = tree.getroot()
     f=dict(root.attrib)
-    f['year'] = year
+    f['year'] = year if year else get_year_from_filename(filename)
     if content:
         xparas =  root.getchildren()[0].getchildren()[0].getchildren()
         content = []
@@ -211,13 +184,16 @@ def load_xml_file(filename = None, doc_id=None, doc_n = None, path = None, conte
 
 # 
 
-# In[24]:
+# In[48]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
 PATH_TO_MAP = os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_MAP))
 map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
+
+
+# In[60]:
 
 
 def load_doc_map():
@@ -229,6 +205,8 @@ def load_doc_map():
 def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=None, filename = None, title=None):
     if doc==doc_name:
         return True
+    if term is None and doc_name is not None:
+        term = doc_name
     
     return (term in MUN_MAP[doc]['attributes']['n'] or doc_n==MUN_MAP[doc]['attributes']['n']
                  or term in MUN_MAP[doc]['attributes']['id'] or doc_id == MUN_MAP[doc]['attributes']['id']
@@ -243,29 +221,57 @@ def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=Non
                     )
             )
 
+def load_contents(docs):
+    if docs is not None:
+        for doc in docs:
+            path = docs[doc]['attributes']['path']
+            doc_data = load_xml_file(filename = path, content=True)
+            if doc_data: 
+                docs[doc]['content'] = doc_data
+    return docs
 
-def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, limit = None):
-    load_doc_map()
-    if doc_name in MUN_MAP:
-        return {doc_name:MUN_MAP[doc_name]}
-    result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
-#     print result
-    if limit is not None:
-        result = result[:10]
-    return dict(result)
 
-def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None):
+def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, limit = None, 
+                  include_content = False):
     load_doc_map()
-    result =  next({doc:MUN_MAP[doc]} for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title))
-#     print result
+    if doc_name is not None and doc_name in MUN_MAP:
+            result =  {doc_name:MUN_MAP[doc_name]}
+    else:
+        term = term if term is not None else doc_name
+        result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
+        if limit is not None:
+            result = result[:10]
+        result = dict(result)
+    if include_content:
+        result = load_contents(result)
     return result
+
+def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, include_content = False):
+    load_doc_map()
+    if doc_name and doc_name in MUN_MAP:
+            result = {doc_name:MUN_MAP[doc_name]}
+    else:
+        term = term if term is not None else doc_name
+        result =  next({doc:MUN_MAP[doc]} for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title))
+
+    if include_content:
+        result = load_contents(result)
+    return result
+
+
+# In[64]:
+
+doc_name = raw_input('Enter a document attribute:\n')
+items = get_documents(doc_name=doc_name, limit = 10, include_content=True)
+print len(items), ' result%s'%('s' if len(items)>1 else '')
+items
 
 
 ### Extract Paragraphs and Sentences
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[7]:
+# In[29]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -283,7 +289,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[8]:
+# In[30]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -312,7 +318,7 @@ def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[9]:
+# In[31]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -345,7 +351,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[10]:
+# In[32]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -387,7 +393,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[11]:
+# In[33]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -422,7 +428,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[12]:
+# In[34]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -486,7 +492,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[13]:
+# In[35]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -577,7 +583,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[14]:
+# In[36]:
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
     if not tagged_sentences:
@@ -609,7 +615,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[15]:
+# In[37]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -673,7 +679,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[16]:
+# In[38]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -721,7 +727,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[17]:
+# In[39]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -738,7 +744,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[18]:
+# In[40]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=show_pbars):
@@ -769,7 +775,7 @@ def extract_links_from_document(doc):
     
 
 
-# In[18]:
+# In[40]:
 
 
 
@@ -778,7 +784,7 @@ def extract_links_from_document(doc):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[19]:
+# In[41]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -880,7 +886,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[20]:
+# In[42]:
 
 from IPython.display import HTML
 

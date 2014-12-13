@@ -1,0 +1,26 @@
+{% extends "base.html"%}
+
+{% block body %}
+<script>
+    var documents = {{ documents | tojson }}
+console.log(typeof documents)
+console.log(documents)
+        </script>
+{% for d in documents %}
+
+<div class="search-result">
+    <script>
+    var d = {{ d | tojson }}
+console.log(typeof d)
+console.log(d)
+console.log(documents[d])
+        </script>
+        
+    <p class="item-title"><a href="/show?doc_name={{d}}" target='_blank'> {{ documents[d].scrape.Title }}</a></p>
+    
+    <p> {{ ", ".join(documents[d].scrape.Subjects) }}</p>
+</div>
+
+{% endfor %}
+
+{% endblock %}

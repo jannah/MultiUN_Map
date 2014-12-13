@@ -1,0 +1,15 @@
+
+{% extends "base.html"%}
+{% block body %}
+ <div id="search-box" class="panel">
+                <form action="" class="panel-body" method="get" name="search">
+                    <div class="input-group">
+                        {{ form.q(id='search-q', class='form-control', placeholder="Search") }}
+                        <span class="input-group-btn">
+                            <button type='submit' class="btn btn-primary">Go!</button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+
+{% endblock %}

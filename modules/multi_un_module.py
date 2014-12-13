@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[21]:
+# In[68]:
 
 import nltk
 import re
@@ -21,7 +21,7 @@ show_pbars = True
 
 ### Load Data Path
 
-# In[22]:
+# In[69]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -35,7 +35,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[23]:
+# In[70]:
 
 def fix_unicode(s):
     text = ''
@@ -76,7 +76,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[24]:
+# In[71]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -113,7 +113,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[65]:
+# In[72]:
 
 from lxml import etree
 #data ={}
@@ -184,7 +184,7 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[48]:
+# In[73]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -193,7 +193,7 @@ map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
 
 
-# In[60]:
+# In[74]:
 
 
 def load_doc_map():
@@ -259,19 +259,11 @@ def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename
     return result
 
 
-# In[64]:
-
-doc_name = raw_input('Enter a document attribute:\n')
-items = get_documents(doc_name=doc_name, limit = 10, include_content=True)
-print len(items), ' result%s'%('s' if len(items)>1 else '')
-items
-
-
 ### Extract Paragraphs and Sentences
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[29]:
+# In[75]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -289,7 +281,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[30]:
+# In[76]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -318,7 +310,7 @@ def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[31]:
+# In[77]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -351,7 +343,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[32]:
+# In[78]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -393,7 +385,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[33]:
+# In[79]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -428,7 +420,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[34]:
+# In[80]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -492,7 +484,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[35]:
+# In[81]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -583,7 +575,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[36]:
+# In[82]:
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
     if not tagged_sentences:
@@ -615,7 +607,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[37]:
+# In[83]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -679,7 +671,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[38]:
+# In[84]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -727,7 +719,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[39]:
+# In[85]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -744,7 +736,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[40]:
+# In[86]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=show_pbars):
@@ -775,7 +767,7 @@ def extract_links_from_document(doc):
     
 
 
-# In[40]:
+# In[86]:
 
 
 
@@ -784,7 +776,7 @@ def extract_links_from_document(doc):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[41]:
+# In[87]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -886,7 +878,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[42]:
+# In[88]:
 
 from IPython.display import HTML
 

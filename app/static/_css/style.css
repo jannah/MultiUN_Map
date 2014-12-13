@@ -9,12 +9,22 @@ and open the template in the editor.
 */
 
 #container{
-    width:800px;
-    margin: 0 auto;
+    /*width:800px;*/
+    margin: 5% 5% auto;
 }
 #search-q{
     /*width:90%;*/
 }
 .item-title{
     font-size:1.2em;
+}
+
+#document-display{
+    
+}
+#document-display h1{
+    font-size: 1.25em;
+}
+#document-display h2{
+    font-size: 1.1em;
 }

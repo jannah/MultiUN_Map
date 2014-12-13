@@ -2,11 +2,22 @@
 {% extends "base.html"%}
 
 {% block body %}
-<h1>{{ doc_name }} </h1>
-<div id='document-metaata'>
-{{ mun.json2html(document) | safe}}
-</div>
+<script>
+    var doc = {{ doc  | tojson | safe }}
+    console.log(doc)
+</script>
+<div id='document-display'>
+    <h1>Title:<br>{{ doc.scrape.Title }} </h1>
+<p>Lang: {{doc.attributes.lang }}, Date: {{ doc.attributes.date }}</p>
+<h2>Subjects</h2>
+<ul>
+    {% for subject in doc.scrape.Subjects %}
+    <li> {{ subject }} </li>
+    {% endfor %}
+</ul>
+
 <div id='document-content'>
-    {{ mun.get_doc_html(document) | safe }}
+    {{ mun.get_doc_html(doc) | safe }}
+</div>
 </div>
 {% endblock %}

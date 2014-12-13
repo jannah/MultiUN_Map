@@ -884,7 +884,7 @@ from IPython.display import HTML
 
 IGNORE_LIST = ['jobs', 'Display PDF File', 'links', 'Download File', 'content' ]
 def is_heading(para):
-    return len(para)==1 and para[0][-1] not in ['.', ':', '"'] and para[0][0] not in ['*', '(', '"']
+    return len(para)==1 and para[0][-1] not in ['.', ':', '"', '\'', ';', ','] and para[0][0] not in ['*', '(', '"', '\'']
 
 
 def json2html(obj, ignore_list = IGNORE_LIST):

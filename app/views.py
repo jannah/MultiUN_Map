@@ -35,5 +35,6 @@ def show():
     print doc_name
     
     document = mun.get_document(doc_name=doc_name, include_content = True)
-    return render_template('doc.html', doc_name=doc_name, document=document, mun=mun)
+    
+    return render_template('doc.html', doc_name=doc_name, doc=document.itervalues().next(), mun=mun)
     return 'showing'

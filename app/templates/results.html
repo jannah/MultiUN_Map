@@ -1,21 +1,21 @@
 {% extends "base.html"%}
 
 {% block body %}
-<script>
-    var documents = {{ documents | tojson }}
-console.log(typeof documents)
-console.log(documents)
-        </script>
+<div id="search-box" class="panel">
+                <form action="" class="panel-body" method="get" name="search">
+                    <div class="input-group">
+                        {{ form.q(id='search-q', class='form-control', placeholder="Search") }}
+                        <span class="input-group-btn">
+                            <button type='submit' class="btn btn-primary">Go!</button>
+                        </span>
+                    </div>
+                </form>
+            </div>
+
 {% for d in documents %}
 
 <div class="search-result">
-    <script>
-    var d = {{ d | tojson }}
-console.log(typeof d)
-console.log(d)
-console.log(documents[d])
-        </script>
-        
+          
     <p class="item-title"><a href="/show?doc_name={{d}}" target='_blank'> {{ documents[d].scrape.Title }}</a></p>
     
     <p> {{ ", ".join(documents[d].scrape.Subjects) }}</p>

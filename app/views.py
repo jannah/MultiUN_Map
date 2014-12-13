@@ -12,7 +12,8 @@ def home():
     print q
     if len(q)>0:
         return do_search(q)
-    return render_template('search.html', form = form)
+    subjects = mun.get_subjects()
+    return render_template('search.html',subjects=subjects, form = form)
    
    
 #@app.route('/search')
@@ -28,13 +29,7 @@ def do_search(q):
 #        print documents[doc]['scrape']['Subjects']
 ##        break
         
-    subjects_list = [documents[doc]['scrape']['Subjects']
-            for doc in documents 
-            if 'scrape' in documents[doc]
-            and 'Subjects' in documents[doc]['scrape']]
-    subjects = [ subject for subjects in subjects_list for subject in subjects]
-#    subjects_fd = [{'key':key, 'value':value} for (key,value) in nltk.FreqDist(subjects).items()]
-        
+    subjects = mun.get_subjects(docs=documents)
     
     return render_template('results.html', documents=documents, subjects=subjects, form = SearchForm())
     

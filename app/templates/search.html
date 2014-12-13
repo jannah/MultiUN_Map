@@ -11,5 +11,17 @@
                     </div>
                 </form>
             </div>
-
+<div id='subjects-histogram'>
+    <script>
+        var subjects = {{subjects | tojson | safe }};
+        console.log(subjects);
+        var fd = d3.nest()
+                .key(function(d) { return d; })
+                .rollup(function(leaves) { return leaves.length; })
+                .entries(subjects);
+        fd = fd.sort(function(a,b){
+        return b.values-a.values;});
+        histogram = new Histogram('#subjects-histogram', fd.slice(0,19), 200, 600, 'Subjects');
+    </script>
+</div>
 {% endblock %}

@@ -193,7 +193,7 @@ map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
 
 
-# In[95]:
+# In[2]:
 
 
 def load_doc_map():
@@ -257,6 +257,21 @@ def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename
     if include_content:
         result = load_contents(result)
     return result
+def get_subjects(docs=None):
+    load_doc_map()
+    subjects = []
+    if docs is not None:
+        subjects_list = [MUN_MAP[doc]['scrape']['Subjects']
+            for doc in docs 
+            if 'scrape' in MUN_MAP[doc]
+            and 'Subjects' in MUN_MAP[doc]['scrape']]
+    else:
+        subjects_list = [MUN_MAP[doc]['scrape']['Subjects']
+            for doc in MUN_MAP 
+            if 'scrape' in MUN_MAP[doc]
+            and 'Subjects' in MUN_MAP[doc]['scrape']]
+    subjects = [ subject for subjects in subjects_list for subject in subjects]
+    return subjects
 
 
 ### Extract Paragraphs and Sentences
@@ -878,13 +893,13 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[100]:
+# In[103]:
 
 from IPython.display import HTML
 
 IGNORE_LIST = ['jobs', 'Display PDF File', 'links', 'Download File', 'content' ]
 def is_heading(para):
-    return len(para)==1 and para[0][-1] not in ['.', ':', '"'] and para[0][0] not in ['*', '(', '"']
+    return len(para)==1 and para[0][-1] not in ['.', ':', '"', '\'', ';', ','] and para[0][0] not in ['*', '(', '"', '\'']
 
 
 def json2html(obj, ignore_list = IGNORE_LIST):

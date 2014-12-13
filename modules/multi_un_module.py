@@ -193,7 +193,7 @@ map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
 
 
-# In[74]:
+# In[95]:
 
 
 def load_doc_map():
@@ -227,7 +227,7 @@ def load_contents(docs):
             path = docs[doc]['attributes']['path']
             doc_data = load_xml_file(filename = path, content=True)
             if doc_data: 
-                docs[doc]['content'] = doc_data
+                docs[doc]['content'] = doc_data['content']
     return docs
 
 
@@ -878,11 +878,11 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[88]:
+# In[100]:
 
 from IPython.display import HTML
 
-IGNORE_LIST = ['jobs', 'Display PDF File', 'links', 'Download File' ]
+IGNORE_LIST = ['jobs', 'Display PDF File', 'links', 'Download File', 'content' ]
 def is_heading(para):
     return len(para)==1 and para[0][-1] not in ['.', ':', '"'] and para[0][0] not in ['*', '(', '"']
 
@@ -912,14 +912,32 @@ def json2html(obj, ignore_list = IGNORE_LIST):
     return html
 
 
-def get_doc_html(doc):
+def get_doc_html(doc_obj):
     html = ''
-    for para in doc['contens']:
-        if len(para) ==1:
-            html+='<h1>%s</h1>'%para[0]
-        else:
-            html+= '<p>%s</p>'%(" ".join(para))
-            
+    print doc_obj
+    if 'content' not in doc_obj:
+        for doc_name in doc_obj:
+            print doc_name
+            print doc_obj[doc_name]
+            doc = doc_obj[doc_name]
+            break
+    else:
+        doc = doc_obj
+    if 'content' in doc:
+        for para in doc['content']:
+            if is_heading(para):
+                html+='<h1>%s</h1>'%para[0]
+            else:
+                html+= '<p>%s</p>'%(" ".join(para))
+
 #     html = [ '<p>%s</p>'%(" ".join(para)) for para in doc['content']]
     return html
+
+
+# In[102]:
+
+
+# doc = get_document(doc_name=r'multiUN.en\un\xml\en\2002\A_56_1015-en.xml', include_content=True)
+# # doc
+# h=HTML(get_doc_html(doc));h
 

@@ -20,11 +20,42 @@ and open the template in the editor.
 }
 
 #document-display{
-    
+
 }
 #document-display h1{
     font-size: 1.25em;
 }
 #document-display h2{
     font-size: 1.1em;
+}
+
+#subjects-histogram
+{
+    width:30%;
+    height: 500;
+    float:left;
+}
+#search-results{
+    float:left;
+}
+.histogram rect{
+    fill:steelblue;
+}
+.histogram rect:hover{
+    fill:orange;
+}
+.histogram text{
+
+    z-index:10;
+}
+.unselectable{
+      -webkit-user-select:none;
+  -khtml-user-select:none;
+  -moz-user-select:none;
+  -ms-user-select:none;
+  -o-user-select:none;
+  user-select:none;
+}
+.tick text{
+
 }

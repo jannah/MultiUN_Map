@@ -2,25 +2,41 @@
 
 {% block body %}
 <div id="search-box" class="panel">
-                <form action="" class="panel-body" method="get" name="search">
-                    <div class="input-group">
-                        {{ form.q(id='search-q', class='form-control', placeholder="Search") }}
-                        <span class="input-group-btn">
-                            <button type='submit' class="btn btn-primary">Go!</button>
-                        </span>
-                    </div>
-                </form>
-            </div>
-
+    <form action="" class="panel-body" method="get" name="search">
+        <div class="input-group">
+            {{ form.q(id='search-q', class='form-control', placeholder="Search") }}
+            <span class="input-group-btn">
+                <button type='submit' class="btn btn-primary">Go!</button>
+            </span>
+        </div>
+    </form>
+</div>
+<div id='subjects-histogram'>
+    <script>
+        var subjects = {{subjects | tojson | safe }};
+        console.log(subjects);
+        var fd = d3.nest()
+                .key(function(d) { return d; })
+                .rollup(function(leaves) { return leaves.length; })
+                .entries(subjects);
+        fd = fd.sort(function(a,b){
+        return b.values-a.values;});
+        histogram = new Histogram('#subjects-histogram', fd.slice(0,19), 200, 600, 'Subjects');
+    </script>
+</div>
+<div id='search-results'>
 {% for d in documents %}
 
 <div class="search-result">
-          
+
     <p class="item-title"><a href="/show?doc_name={{d}}" target='_blank'> {{ documents[d].scrape.Title }}</a></p>
-    
+
     <p> {{ ", ".join(documents[d].scrape.Subjects) }}</p>
 </div>
-
 {% endfor %}
+</div>
+
+
+
 
 {% endblock %}

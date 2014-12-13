@@ -1,0 +1,9 @@
+
+{% extends "base.html"%}
+
+
+{% extends "base.html"%}
+{% block body %}
+<h1>{{ doc_name }} </h1>
+ {{ mun.json2html(document)}}
+{% endblock %}

@@ -3,5 +3,10 @@
 
 {% block body %}
 <h1>{{ doc_name }} </h1>
- {{ mun.json2html(document) | safe}}
+<div id='document-metaata'>
+{{ mun.json2html(document) | safe}}
+</div>
+<div id='document-content'>
+    {{ mun.get_doc_html(document) | safe }}
+</div>
 {% endblock %}

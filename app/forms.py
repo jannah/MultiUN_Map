@@ -4,5 +4,6 @@ from wtforms import StringField, BooleanField
 from wtforms.validators import Required
 from app import app
 
+
 class SearchForm(Form):
     q = StringField('search-q', validators=[Required()])

@@ -59,3 +59,21 @@ and open the template in the editor.
 .tick text{
 
 }
+.document-part{
+    /*float:left;*/
+    border:1px solid grey;
+    margin:5px;
+}
+#document-info{
+    width:100%;
+}
+.fd-table{
+    
+}
+
+.fd-table tr{
+    
+}
+.fd-table td{
+    padding:5px;
+}

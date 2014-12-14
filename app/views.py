@@ -4,6 +4,8 @@ import json
 from flask import Flask, request, redirect,flash, url_for,render_template
 import nltk
 from modules import multi_un_module as mun
+from app import processing
+
 print 'READY'
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -21,17 +23,12 @@ def home():
 def do_search(q):
     print ' IN SEARCH'
     documents = mun.get_documents(term=q)
-#    print documents
-#    print type(documents)
-#    for doc in documents:
-#        print doc
-#        
-#        print documents[doc]['scrape']['Subjects']
-##        break
-        
     subjects = mun.get_subjects(docs=documents)
     
-    return render_template('results.html', documents=documents, subjects=subjects, form = SearchForm())
+    return render_template('results.html', 
+                documents=documents, 
+                subjects=subjects, 
+                form = SearchForm())
     
     
 @app.route('/show')
@@ -40,5 +37,11 @@ def show():
     print doc_name
     
     document = mun.get_document(doc_name=doc_name, include_content = True)
-    return render_template('doc.html', doc_name=doc_name, doc=document.itervalues().next(), mun=mun)
+    doc=document.itervalues().next()
+    nchunks, vchunks = processing.get_document_chunks(document)
+    return render_template('doc.html', doc_name=doc_name,
+                doc=doc,
+                nchunks=nchunks,
+                vchunks=vchunks,
+                mun=mun)
     

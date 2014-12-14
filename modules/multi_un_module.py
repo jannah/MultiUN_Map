@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[1]:
+# In[26]:
 
 import nltk
 import re
@@ -16,12 +16,26 @@ import inspect
 from unidecode import unidecode
 from progressbar import AnimatedMarker, Bar, BouncingBar,                            Counter, ETA, Percentage, ProgressBar, SimpleProgress, FileTransferSpeed
 from nltk.corpus import brown
+
+
+## Progress Bar Settings
+
+# In[27]:
+
 show_pbars = True
+def disable_pbars():
+    print 'Disabling progress bars'
+    global show_pbars
+    show_pbars = False
+def is_show_pbars():
+    global show_pbars
+#     print 'show pbars is ' , show_pbars
+    return show_pbars
 
 
 ### Load Data Path
 
-# In[2]:
+# In[28]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -35,7 +49,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[3]:
+# In[29]:
 
 def fix_unicode(s):
     text = ''
@@ -76,7 +90,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[4]:
+# In[30]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -113,11 +127,12 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[5]:
+# In[31]:
 
 from lxml import etree
 #data ={}
-def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=show_pbars, content=True):
+def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=None, content=True):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     data = {}
     years = []
     if year is None:
@@ -136,7 +151,8 @@ def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=show_pbars, 
         pbar.finish()
     return data
 
-def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, content=True):
+def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = None, content=True):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     documents = {}
     full_path = os.path.join(path, year)    
 #     print full_path
@@ -184,7 +200,7 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[6]:
+# In[32]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -194,7 +210,7 @@ MUN_MAP = None
 DOC_ID_MAP = None
 
 
-# In[7]:
+# In[33]:
 
 
 def load_doc_map():
@@ -307,7 +323,7 @@ def get_subjects(docs=None):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[8]:
+# In[34]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -325,36 +341,22 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[9]:
+# In[35]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
     sents = []
     if use_nltk_tokenizer:
-
         sents = sent_tokenizer.sentences_from_text(text)
     else:
-        #sents = "\n".join(texts) # join all the documents into one big string
         #split the document by \n and remove any empty line and extra whitespace
         sents = [sent.strip() for sent in text.split('\n') if len(sent.strip())>0] 
-    return sents
-def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
-    sents = []
-    global sent_tokenizer
-    if use_nltk_tokenizer:
-        sents = sent_tokenizer.sentences_from_text(text)
-    else:
-        #sents = "\n".join(texts) # join all the documents into one big string
-        #split the document by \n and remove any empty line and extra whitespace
-        paragraphs = [sent.strip() for sent in text.split('\n') if len(sent.strip())>0] 
-        #some sentence boundaries are wrong. Some text is split on numbered lists and other abbreviations. hence the join
-        sents = [" ".join(sent) for sent in [sent_tokenizer.sentences_from_text(para) for para in paragraphs]]
     return sents
 
 
 ## Sentence Statistics
 
-# In[10]:
+# In[36]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -387,7 +389,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[11]:
+# In[37]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -410,8 +412,13 @@ def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords
     tokens =  [token for token in tokens                   if ((remove_stopwords and token.lower() not in english_stopwords) or not remove_stopwords)                   and ((alnum_only and token.isalnum()) or not alnum_only)
                   and ((alpha_only and token.isalpha()) or not alpha_only)]
     return tokens
+
+
 # tokenize words but keep sentences seperate
-def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, remove_stopwords=False, use_pattern = 1, show_pbar=show_pbars):
+def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, remove_stopwords=False, 
+                           use_pattern = 1, show_pbar=None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
+    
     sent_tokens = []
     if show_pbar:
         pbar = ProgressBar(widgets=["Tokenizing sentences", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(sentences)).start()
@@ -429,7 +436,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[12]:
+# In[38]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -464,7 +471,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[13]:
+# In[39]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -480,6 +487,7 @@ def get_location_tagger_tags():
     
     return pos_tags_locations
 
+
 #the tagger here can be a 3 stage tagger or 5 state if the location tagger is included
 #note that the location tagger is used first to ensure the location/orgainzations are detected properly
 def build_backoff_tagger (train_sents, default='NN', include_location_tagger=False):
@@ -492,24 +500,29 @@ def build_backoff_tagger (train_sents, default='NN', include_location_tagger=Fal
         t4 = nltk.UnigramTagger(get_location_tagger_tags(), backoff=t3) #tag using the custom tagger first if requested
     return t4
 
+
 def build_location_tagger():
     t0 = nltk.DefaultTagger('U')
     return nltk.BigramTagger(get_location_tagger_tags(), backoff=t0)
+
 
 def get_brown_tagger(category = None, include_location_tagger=False):
     if category:
         return build_backoff_tagger(brown.tagged_sents(categories=category), include_location_tagger=include_location_tagger)
     else:
         return build_backoff_tagger(brown.tagged_sents(), include_location_tagger=include_location_tagger)
+
     
 def get_default_treebank_tagger():
     return nltk.data.load('taggers/maxent_treebank_pos_tagger/english.pickle')
 
-#Tag the sentences based on the selected tagger
 
-def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(), show_pbar=show_pbars):
+#Tag the sentences based on the selected tagger
+def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(), show_pbar=None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     if show_pbar:
-        pbar = ProgressBar(widgets=["tagging sentences", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(tokenized_sentences)).start()
+        pbar = ProgressBar(widgets=["tagging sentences", SimpleProgress(), Percentage(), Bar(), ETA()],
+                           maxval=len(tokenized_sentences)).start()
     i = 0
     tagged_sentences = []
     for sent in tokenized_sentences:
@@ -528,7 +541,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[14]:
+# In[40]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -565,7 +578,8 @@ def get_chunker(grammer=None, tag_set=None, target='PNS'):
 
 # returns chunk trees based on teh chunker and target chosesn
 # randomize and limit are for testing purposues. They allow the chunker to run on a limited number of random sentences
-def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS', limit=0, randomize= False, show_pbar=show_pbars):
+def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS', limit=0, randomize= False, show_pbar=None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     chunks = []
     limit = limit if limit>0 else len(tagged_sents)
     i=0
@@ -603,6 +617,8 @@ def extract_target_from_chunks(raw_chunks, target='PNS',print_output=False, prin
             print '\n'
         
     return [phrase for phrases in chunks for phrase in phrases]
+
+
 #flattens the trees but doesn't remove anything. It only groups the target one tuple. 
 # This helps generate collocations based on complex chunker grammer which was very useful
 def flatten_chunks(chunks, target='PNS'):
@@ -625,23 +641,23 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[15]:
+# In[41]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
     if not tagged_sentences:
         sent_tokens = sent_tokens if sent_tokens else             tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
         tagger = get_brown_tagger(include_location_tagger=True)
-    tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger, show_pbar=show_pbars)
+    tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger)
     #get the proper noun chunks from teh chunker
-    nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS', show_pbar=show_pbars)
+    nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
     nchunks = extract_target_from_chunks(nchunks, target='PNS')
     # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
     if remove_months:
         import calendar
         nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 and chunk not in calendar.month_name]
     
-    vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS', show_pbar=show_pbars)
+    vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
     vchunks = extract_target_from_chunks(vchunks, target='VNS')
 #     vchunks = [chunk for chunk in vchunks if chunk not in nchunks]
     nchunks_fd = nltk.FreqDist(nchunks)
@@ -658,14 +674,14 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[16]:
+# In[42]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
 #it doesn't matter whether I pass tagged sentences or not since I am focusing on words only
 def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_limit = 20):
 #     from nltk.collocations import *
-    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences,alpha_only = True,                                                                         remove_stopwords=True, use_pattern = 1, show_pbar=show_pbars)
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences,alpha_only = True,                                                                         remove_stopwords=True, use_pattern = 1)
     word_tokens = [word for sent in sent_tokens for word in sent]
 #     print word_tokens[:5]
     bigram_measures = nltk.collocations.BigramAssocMeasures()
@@ -689,10 +705,10 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
         get_brown_tagger(include_location_tagger=True)
     if sentences:
         sent_tokens = tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
-        tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger, show_pbar=show_pbars)
+        tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger)
     
     chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
-    chunks = get_chunks(tagged_sentences,chunker=chunker, target = target,show_pbar=show_pbars )
+    chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
     flat_chunks = flatten_chunks(chunks, target=target)
     flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
     
@@ -722,7 +738,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[17]:
+# In[43]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -770,7 +786,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[18]:
+# In[44]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -787,10 +803,11 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[19]:
+# In[45]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
-def extract_links_from_documents(docs, show_pbar=show_pbars):
+def extract_links_from_documents(docs, show_pbar=None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     links = {}
     if show_pbar:
         pbar = ProgressBar(widgets=["Extracting Outgoing Links ", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(docs)).start()
@@ -832,16 +849,11 @@ def extract_links_from_text(text):
     return result
 
 
-# In[19]:
-
-
-
-
 ## Printing Functions
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[20]:
+# In[46]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -943,7 +955,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[21]:
+# In[ ]:
 
 from IPython.display import HTML
 
@@ -1009,9 +1021,11 @@ def get_doc_html(doc):
     return html
 
 
-# In[39]:
+# In[ ]:
 
+# disable_pbars()
 # doc = get_documents(term=r'A/C.4/61/L.13', include_content=True)
+
 # doc2 = get_document(term = r'A/C.4/61/L.13/Rev.1')
 # if doc is None:
 #     print 'not found'
@@ -1021,12 +1035,18 @@ def get_doc_html(doc):
 # HTML(get_doc_html_with_links(doc, 'TEST', use_doc_name=True))
 
 
-# In[37]:
+# In[ ]:
+
+# sents = extract_sentences(doc)
+# tokens = tokenize_sentence_text(sents)
 
 
-
-
-# In[24]:
+# In[ ]:
 
 # dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
+
+
+# In[ ]:
+
+
 

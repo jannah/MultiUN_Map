@@ -5,7 +5,7 @@ from flask import Flask, request, redirect,flash, url_for,render_template
 import nltk
 from modules import multi_un_module as mun
 from app import processing
-mun.show_pbars = False
+mun.disable_pbars()
 print 'READY'
 @app.route('/', methods=['GET', 'POST'])
 def home():

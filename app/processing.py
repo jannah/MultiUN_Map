@@ -19,8 +19,10 @@ def get_document_chunks(doc):
     load_modules()
     global chunker
     global tagger
+    print 'getting chunks for', doc.iterkeys().next()
+    print 'pbars is ' , mun.show_pbars
     sentences = mun.extract_sentences(doc)
-    mun.print_sentence_statistics(sentences)
+#    mun.print_sentence_statistics(sentences)
     sent_tokens = mun.tokenize_sentence_text(sentences, use_pattern=2)
     tagged_sentences = mun.tag_pos_sentences(sent_tokens, tagger=tagger)
     nchunks = mun.get_chunks(tagged_sentences, chunker=chunker, target = 'PNS')

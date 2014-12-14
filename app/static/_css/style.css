@@ -49,12 +49,12 @@ and open the template in the editor.
     z-index:10;
 }
 .unselectable{
-      -webkit-user-select:none;
-  -khtml-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  -o-user-select:none;
-  user-select:none;
+    -webkit-user-select:none;
+    -khtml-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select:none;
+    -o-user-select:none;
+    user-select:none;
 }
 .tick text{
 
@@ -62,15 +62,15 @@ and open the template in the editor.
 .document-part{
     /*float:left;*/
     /*border:1px solid grey;*/
-    
-/*    margin:5px;*/
+
+    /*    margin:5px;*/
 }
 .document-part .panel-body{
-    max-height:200px;
+    max-height:400px;
     overflow-y: auto;
 }
 #document-header{
-    
+
 }
 #document-info{
     float:left;
@@ -83,12 +83,16 @@ and open the template in the editor.
     width:70%;
 
 }
+#document-content h1{
+    font-size:1.1em;
+    font-weight: bold;
+}
 .fd-table{
-    
+
 }
 
 .fd-table tr{
-    
+
 }
 .fd-table td{
     padding:5px;

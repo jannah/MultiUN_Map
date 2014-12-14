@@ -11,7 +11,12 @@ function init_mun(){
     console.log(doc)
     enableHighlight('.panel-body .value')
 }
-
+/*
+ * inspired by 
+ * http://stackoverflow.com/questions/8644428/how-to-highlight-text-using-javascript
+ * @param {type} target
+ * @returns {undefined}
+ */
 function enableHighlight(target)
 {
 //    var targets = $(target)

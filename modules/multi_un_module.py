@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[68]:
+# In[1]:
 
 import nltk
 import re
@@ -21,7 +21,7 @@ show_pbars = True
 
 ### Load Data Path
 
-# In[69]:
+# In[2]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -35,7 +35,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[70]:
+# In[3]:
 
 def fix_unicode(s):
     text = ''
@@ -76,7 +76,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[71]:
+# In[4]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -113,7 +113,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[72]:
+# In[5]:
 
 from lxml import etree
 #data ={}
@@ -184,42 +184,56 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[73]:
+# In[6]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
 PATH_TO_MAP = os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_MAP))
 map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
+DOC_ID_MAP = None
 
 
-# In[1]:
+# In[7]:
 
 
 def load_doc_map():
     global MUN_MAP
+    global DOC_ID_MAP
     if MUN_MAP is None:
         MUN_MAP = json.loads(map_zip.read('map.json','r'))
-    return MUN_MAP
+        DOC_ID_MAP = dict(sorted([(MUN_MAP[doc]['attributes']['id'].strip(), doc) for doc in MUN_MAP], reverse=True))
+        
+#     return MUN_MAP
 
 
 def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=None, filename = None, title=None):
-    if doc==doc_name:
+    load_doc_map()
+    if doc is not None and doc==doc_name:
         return True
-    if term is None and doc_name is not None:
-        term = doc_name
+    if doc_id is not None:
+        return doc_id in DOC_ID_MAP
+#     if term is None and doc_name is not None:
+#         term = doc_name
     
-    return (term in MUN_MAP[doc]['attributes']['n'] or doc_n==MUN_MAP[doc]['attributes']['n']
-                 or term in MUN_MAP[doc]['attributes']['id'] or doc_id == MUN_MAP[doc]['attributes']['id']
-                 or doc.endswith(term)
-                 or 
-                 ( 'scrape' in MUN_MAP[doc]  
-                 and (
-                        ( 'Title' in MUN_MAP[doc]['scrape'] and term.lower() in (MUN_MAP[doc]['scrape']['Title']).lower())
-                      or 
-                        ( 'Subjects' in MUN_MAP[doc]['scrape'] and term.lower() in " ".join(MUN_MAP[doc]['scrape']['Subjects']).lower())
-                      )
+    return (
+                term is not None and
+                (term in MUN_MAP[doc]['attributes']['n']
+                or term in MUN_MAP[doc]['attributes']['id']
+                or doc.endswith(term)
+                or ( 'scrape' in MUN_MAP[doc]  
+                 and (( 'Title' in MUN_MAP[doc]['scrape'] and term.lower() 
+                       in (MUN_MAP[doc]['scrape']['Title']).lower())
+                      or ('Subjects' in MUN_MAP[doc]['scrape'] and term.lower() 
+                          in " ".join(MUN_MAP[doc]['scrape']['Subjects']).lower()))
                     )
+                )
+                or (title is not None 
+                    and 'scrape' in MUN_MAP[doc]   
+                    and 'Title' in MUN_MAP[doc]['scrape'] 
+                    and title.lower() in MUN_MAP[doc]['scrape']['Title'].lower())
+                or doc_n==MUN_MAP[doc]['attributes']['n']
+                or doc_id == MUN_MAP[doc]['attributes']['id']
             )
 
 
@@ -262,9 +276,11 @@ def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename
     if doc_name and doc_name in MUN_MAP:
             result = {doc_name:MUN_MAP[doc_name]}
     else:
-        term = term if term is not None else doc_name
-        result =  next({doc:MUN_MAP[doc]} for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title))
-
+#         term = term if term is not None else doc_name
+        try:
+            result =  next({doc:MUN_MAP[doc]} for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title))
+        except Exception,e:
+            return None
     if include_content:
         result = load_contents(result)
     return result
@@ -291,7 +307,7 @@ def get_subjects(docs=None):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[75]:
+# In[8]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -309,7 +325,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[76]:
+# In[9]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -338,7 +354,7 @@ def parse_sentences_from_text2(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[77]:
+# In[10]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -371,7 +387,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[78]:
+# In[11]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -413,7 +429,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[79]:
+# In[12]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -448,7 +464,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[80]:
+# In[13]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -512,7 +528,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[81]:
+# In[14]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -609,7 +625,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[82]:
+# In[15]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
@@ -642,7 +658,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[83]:
+# In[16]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -706,7 +722,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[84]:
+# In[17]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -754,7 +770,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[85]:
+# In[18]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -771,7 +787,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[86]:
+# In[19]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=show_pbars):
@@ -794,15 +810,29 @@ def extract_links_from_documents(docs, show_pbar=show_pbars):
     if show_pbar:
         pbar.finish()
     return links
+
+
 def extract_links_from_document(doc):
+    if 'content' not in doc:
+        doc = doc.itervalues().next()
+    
     text = "\n".join([ " ".join(c) for c in doc['content']])
+    return extract_links_from_text(text)
+
+
+def extract_links_from_text(text):
     links = re.finditer(DOCUMENT_LINK_PATTERN, text)
     result = [link.group(0) for link in links]
-    return result
+    #check if there joint references extracted as one
+    for link in result:
+        if '-' in link:
+            sublinks = link.split('-')
+            result+= [sublink for sublink in link.split('-') if '/' in sublink]
     
+    return result
 
 
-# In[86]:
+# In[19]:
 
 
 
@@ -811,7 +841,7 @@ def extract_links_from_document(doc):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[87]:
+# In[20]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -913,7 +943,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[103]:
+# In[21]:
 
 from IPython.display import HTML
 
@@ -947,32 +977,56 @@ def json2html(obj, ignore_list = IGNORE_LIST):
     return html
 
 
-def get_doc_html(doc_obj):
+def get_doc_html_with_links(doc, url, use_doc_name=False, use_n=False):
+    links = set(extract_links_from_document(doc))
+    print links
+    html = get_doc_html(doc)
+    linked_docs={}
+    for link in links:
+#         print link
+        link_doc =get_document(doc_id=link)
+        if link_doc is not None:
+            print 'adding link ', link
+            linked_docs[link]=link_doc
+    for link in linked_docs:
+        ref = linked_docs[link].iterkeys().next() if use_doc_name else                 linked_docs[link].itervalues().next()['attributes']['n'] if use_n                 else link
+        link_href = '<a href="%s%s" target="_blank">%s</a>'%(url,ref,link)
+        html = html.replace(link, link_href)
+    return html
+
+
+def get_doc_html(doc):
     html = ''
-    print doc_obj
-    if 'content' not in doc_obj:
-        for doc_name in doc_obj:
-            print doc_name
-            print doc_obj[doc_name]
-            doc = doc_obj[doc_name]
-            break
-    else:
-        doc = doc_obj
+    if 'content' not in doc:
+        doc = doc.itervalues().next()
+        
     if 'content' in doc:
         for para in doc['content']:
             if is_heading(para):
                 html+='<h1>%s</h1>'%para[0]
             else:
                 html+= '<p>%s</p>'%(" ".join(para))
-
-#     html = [ '<p>%s</p>'%(" ".join(para)) for para in doc['content']]
     return html
 
 
-# In[102]:
+# In[39]:
+
+# doc = get_documents(term=r'A/C.4/61/L.13', include_content=True)
+# doc2 = get_document(term = r'A/C.4/61/L.13/Rev.1')
+# if doc is None:
+#     print 'not found'
+# else:
+#     print len(doc)
+# print doc2
+# HTML(get_doc_html_with_links(doc, 'TEST', use_doc_name=True))
 
 
-# doc = get_document(doc_name=r'multiUN.en\un\xml\en\2002\A_56_1015-en.xml', include_content=True)
-# # doc
-# h=HTML(get_doc_html(doc));h
+# In[37]:
+
+
+
+
+# In[24]:
+
+# dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
 

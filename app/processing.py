@@ -13,6 +13,8 @@ def load_modules():
         tagger = mun.get_brown_tagger(include_location_tagger=True)
     if chunker is None:
         chunker = mun.get_chunker(tag_set='brown', target='PNS')
+        
+        
 def get_document_chunks(doc):
     load_modules()
     global chunker

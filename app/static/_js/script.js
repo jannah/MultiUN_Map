@@ -3,8 +3,56 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+$(document).on('ready', function(){
+    init_mun();
+})
+function init_mun(){
+    console.log('READY')
+    console.log(doc)
+    enableHighlight('.panel-body .value')
+}
 
-
+function enableHighlight(target)
+{
+//    var targets = $(target)
+//    console.log(targets)
+    $(target).on('click', function(){
+        var self = $(this)
+        var text = self.text();
+//        console.log('clicking')
+        console.log(text)
+        $('.highlight-key').removeClass('highlight-key');
+        self.addClass('highlight-key');
+        highlight(text);
+        
+    })/*
+    for(var i in targets)
+    {
+        var el = targets[i]
+        $(el).on('click', function(){
+            var text = $(this).text()
+            console.log('highlighting '+text)
+            $(this).addClass('highlight')
+        })
+    }*/
+}
+function highlight(text)
+{
+    $('.highlight').removeClass('highlight')
+    inputText = document.getElementById("document-content")
+    var innerHTML = inputText.innerHTML
+    var re = new RegExp(text, 'g');
+    var html = "<span class='highlight'>"+text+"</span>"
+    inputText.innerHTML = innerHTML.replace(re, html);
+    /*
+    var index = innerHTML.indexOf(text);
+    if ( index >= 0 )
+    { 
+        innerHTML = innerHTML.substring(0,index) + "<span class='highlight'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
+        inputText.innerHTML = innerHTML 
+    }
+*/
+}
 Histogram = function(target, data, width, height, title) {
     console.log(data);
 //    console.log($(this).parent());

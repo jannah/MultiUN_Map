@@ -146,7 +146,7 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = True, con
     for i in range(len(files)):
         f = files[i]
         filename = os.path.join(full_path, f)
-        documents[f] = load_xml_file(filename=filename, content=conten)
+        documents[f] = load_xml_file(filename=filename, content=content)
         if show_pbar:
             pbar2.update(i+1)
     if show_pbar and len(files)>0:
@@ -193,7 +193,7 @@ map_zip = zipfile.ZipFile(PATH_TO_MAP)
 MUN_MAP = None
 
 
-# In[2]:
+# In[1]:
 
 
 def load_doc_map():
@@ -201,6 +201,7 @@ def load_doc_map():
     if MUN_MAP is None:
         MUN_MAP = json.loads(map_zip.read('map.json','r'))
     return MUN_MAP
+
 
 def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=None, filename = None, title=None):
     if doc==doc_name:
@@ -221,6 +222,7 @@ def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=Non
                     )
             )
 
+
 def load_contents(docs):
     if docs is not None:
         for doc in docs:
@@ -237,11 +239,20 @@ def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filenam
     if doc_name is not None and doc_name in MUN_MAP:
             result =  {doc_name:MUN_MAP[doc_name]}
     else:
+        result = {}
+        counter = 0
         term = term if term is not None else doc_name
-        result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
-        if limit is not None:
-            result = result[:10]
-        result = dict(result)
+        for doc in MUN_MAP:
+            if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title):
+                result[doc] = MUN_MAP[doc]
+                counter+=1
+            if limit is not None and counter>= limit:
+                break
+        
+#         result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
+#         if limit is not None:
+#             result = result[:10]
+#         result = dict(result)
     if include_content:
         result = load_contents(result)
     return result
@@ -257,6 +268,8 @@ def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename
     if include_content:
         result = load_contents(result)
     return result
+
+
 def get_subjects(docs=None):
     load_doc_map()
     subjects = []
@@ -363,7 +376,7 @@ def print_sentence_statistics(sentences):
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
 
-def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords=False, use_pattern = 1):
+def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords=False, use_pattern = 2):
     pattern1 = ["\w+[\-|']\w+", #words joined with '-' or words with ' in them \
                "(\w+/)+\w+", #document references and words that are seperated with '\' \
                "\([\w+\s*]\)", #words with parenthesis in them. this will exclude parenthisis \
@@ -503,6 +516,8 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
+
+
 #it assumes brown tag set and proper nouns as default parameters. I found brown to be best in detecting proper nouns
 def get_chunker(grammer=None, tag_set=None, target='PNS'):
     if not grammer:
@@ -530,6 +545,8 @@ def get_chunker(grammer=None, tag_set=None, target='PNS'):
             grammer = r"""PNS: {<DET|ADJ|N>*<NP><NUM>*}
                             {<DET|ADJ|N>+<IN>*<DET|ADJ|N><NP><NUM>*}"""
     return nltk.RegexpParser(grammer)
+
+
 # returns chunk trees based on teh chunker and target chosesn
 # randomize and limit are for testing purposues. They allow the chunker to run on a limited number of random sentences
 def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS', limit=0, randomize= False, show_pbar=show_pbars):
@@ -551,6 +568,8 @@ def get_chunks(tagged_sents, chunker=get_chunker(), target = 'PNS', limit=0, ran
     if show_pbar:
         pbar.finish()
     return chunks
+
+
 #extracts the target chunks from the tree. I seperated this because in some cases I need the trees
 def extract_target_from_chunks(raw_chunks, target='PNS',print_output=False, print_leaves = False):
     chunks=[]
@@ -591,6 +610,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Verb objects
 
 # In[82]:
+
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
     if not tagged_sentences:

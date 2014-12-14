@@ -3,42 +3,63 @@
 
 {% block body %}
 <script>
-    var doc = {{ doc  | tojson | safe }}
-    console.log(doc)
+    var doc = {{doc | tojson | safe}}
+//    console.log(doc)
 
 </script>
 
-{% macro print_fd(fd) -%}
-<table class="fd-table">
-{% for k,v in fd %}
-<tr><td>{{v}}</td><td>{{k}}</td></tr>
-{% endfor %}
-</table>
+{% macro print_fd(fd,title, id) -%}
+<div id="{{id}}" class="document-part panel panel-default">
+    <div class="panel-heading">{{title}}</div>
+    <div class="panel-body">
+        <table class="fd-table table">
+            <tr><td>Freq</td><td>Item</td></tr>
+            {% for k,v in fd %}
+            <tr><td class="key">{{v}}</td><td class="value">{{k}}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{%- endmacro %}
+{% macro print_list(arr,title, id) -%}
+<div id="{{id}}" class="document-part panel panel-default">
+    <div class="panel-heading">{{title}}</div>
+    <div class="panel-body">
+        <table class="fd-table table">
+            {% for v in arr %}
+            <tr><td class="value">{{v}}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{%- endmacro %}
+ 
+{% macro print_text(text,title, id) -%}
+<div id="{{id}}" class="panel panel-default">
+    <div class="panel-heading">{{title}}</div>
+    <div class="panel-body">
+        {{text}}
+    </div>
+</div>
 {%- endmacro %}
 
+
 <div id='document-display'>
+    <dv id="document-header">
     <h1>Title:<br>{{ doc.scrape.Title }} </h1>
-<p>Lang: {{doc.attributes.lang }}, Date: {{ doc.attributes.date }}</p>
-<div id="document-info">
-<div id="nchunks" class="document-part">
-    <h2>Noun Chunks</h2>
-    {{ print_fd(nchunks) }}
+    <p>Lang: {{doc.attributes.lang }}, Date: {{ doc.attributes.date }}</p>
 </div>
-<div id="vchunks" class="document-part">
-    <h2>Noun-Verb Chunks</h2>
-    {{ print_fd(vchunks) }}
-</div>
-<div class="document-part">
-<h2>Subjects</h2>
-<ul>
-    {% for subject in doc.scrape.Subjects %}
-    <li> {{ subject }} </li>
-    {% endfor %}
-</ul>
-</div>
-</div>
-<div id='document-content'>
-    {{ mun.get_doc_html(doc) | safe }}
-</div>
+    <div id="document-info">
+        {{ print_fd(nchunks[:20], 'Noun Chunks', 'nchunks') }}
+        {{ print_fd(vchunks[:20], 'Noun-Verb Chunks', 'vchunks') }}
+        {{ print_list(doc.scrape.Subjects, 'Subjects', 'subjects') }}
+       
+    </div>
+
+    {{ print_text(mun.get_doc_html_with_links(doc, 
+                '%s?doc_name='%url_for('show'), 
+                use_doc_name=True) | safe,
+        'Full Text', 'document-content') }}
+
 </div>
 {% endblock %}

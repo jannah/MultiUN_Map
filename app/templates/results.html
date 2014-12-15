@@ -4,15 +4,19 @@
 {{ super() }}
 
 <div id='search-results'>
-{% for d in documents %}
-
+    <table class='table'>
+{% for (d, doc) in documents %}
+<tr><td>
 <div class="search-result">
 
-    <p class="item-title"><a href="/show?doc_name={{d}}" target='_blank'> {{ documents[d].scrape.Title }}</a></p>
-
-    <p> {{ ", ".join(documents[d].scrape.Subjects) }}</p>
+    <p class="item-title"><a href="/show?doc_name={{d}}" target='_blank'> {{ doc.scrape.Title }}</a></p>
+    <h2>Subjects</h2>
+    <p> {{ ", ".join(doc.scrape.Subjects) }}</p>
+    <p>Links: {{ doc.links|length}}</p>
 </div>
+</tr></td>
 {% endfor %}
+</table>
 </div>
 
 

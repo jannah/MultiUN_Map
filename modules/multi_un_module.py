@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[26]:
+# In[1]:
 
 import nltk
 import re
@@ -20,7 +20,7 @@ from nltk.corpus import brown
 
 ## Progress Bar Settings
 
-# In[27]:
+# In[2]:
 
 show_pbars = True
 def disable_pbars():
@@ -35,7 +35,7 @@ def is_show_pbars():
 
 ### Load Data Path
 
-# In[28]:
+# In[3]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -49,7 +49,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[29]:
+# In[4]:
 
 def fix_unicode(s):
     text = ''
@@ -90,7 +90,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[30]:
+# In[5]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -127,7 +127,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[31]:
+# In[6]:
 
 from lxml import etree
 #data ={}
@@ -200,7 +200,7 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[32]:
+# In[7]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -210,7 +210,7 @@ MUN_MAP = None
 DOC_ID_MAP = None
 
 
-# In[33]:
+# In[31]:
 
 
 def load_doc_map():
@@ -275,14 +275,15 @@ def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filenam
         for doc in MUN_MAP:
             if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title):
                 result[doc] = MUN_MAP[doc]
+                if 'links' not in result[doc]:
+                    print result[doc]
+                    result[doc]['links']=[]
                 counter+=1
             if limit is not None and counter>= limit:
                 break
-        
-#         result =  [(doc,MUN_MAP[doc]) for doc in MUN_MAP if validate_search_term(doc, term, doc_name, doc_id, doc_n, filename, title)]
-#         if limit is not None:
-#             result = result[:10]
-#         result = dict(result)
+#     order =  sorted(result, key=lambda d: len(result[d]['links']),reverse=True )
+#     print order
+#     result = dict([(d, result[d]) for d in order])
     if include_content:
         result = load_contents(result)
     return result
@@ -323,7 +324,7 @@ def get_subjects(docs=None):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[34]:
+# In[9]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -341,7 +342,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[35]:
+# In[10]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -356,7 +357,7 @@ def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[36]:
+# In[11]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -389,7 +390,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[37]:
+# In[12]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -436,7 +437,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[38]:
+# In[13]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -471,7 +472,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[39]:
+# In[14]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -541,7 +542,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[40]:
+# In[15]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -641,28 +642,31 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[41]:
+# In[16]:
 
 
-def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None):
-    if not tagged_sentences:
-        sent_tokens = sent_tokens if sent_tokens else             tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
-        tagger = get_brown_tagger(include_location_tagger=True)
-    tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger)
-    #get the proper noun chunks from teh chunker
-    nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
-    nchunks = extract_target_from_chunks(nchunks, target='PNS')
-    # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
-    if remove_months:
-        import calendar
-        nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 and chunk not in calendar.month_name]
-    
-    vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
-    vchunks = extract_target_from_chunks(vchunks, target='VNS')
+def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
+ if not tagged_sentences:
+     sent_tokens = sent_tokens if sent_tokens else          tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
+     tagger = get_brown_tagger(include_location_tagger=True)
+ tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger)
+ #get the proper noun chunks from teh chunker
+ nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
+ nchunks = extract_target_from_chunks(nchunks, target='PNS')
+ # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
+ if remove_months:
+     import calendar
+     nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 and chunk not in calendar.month_name]
+ 
+ vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
+ vchunks = extract_target_from_chunks(vchunks, target='VNS')
 #     vchunks = [chunk for chunk in vchunks if chunk not in nchunks]
-    nchunks_fd = nltk.FreqDist(nchunks)
-    vchunks_fd = nltk.FreqDist(vchunks)
-    return print_FreqDists([nchunks_fd, vchunks_fd], titles=['Proper Nouns', 'Verb Objects'], csv=True)
+ nchunks_fd = nltk.FreqDist(nchunks)
+ vchunks_fd = nltk.FreqDist(vchunks)
+ if return_print:
+     return print_FreqDists([nchunks_fd, vchunks_fd], titles=['Proper Nouns', 'Verb Objects'], csv=True)
+ else:
+     return nchunks_fd.items(), vchunks_fd.items()
 
 
 ## Collocations 
@@ -674,7 +678,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[42]:
+# In[17]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -738,7 +742,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[43]:
+# In[18]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -786,7 +790,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[44]:
+# In[19]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -803,7 +807,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[45]:
+# In[20]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=None):
@@ -849,11 +853,43 @@ def extract_links_from_text(text):
     return result
 
 
+## Get and Download Source PDF File
+
+# Parse the URL for the original PDF file and download
+
+# In[21]:
+
+from pattern.web import URL
+BASE_URL = 'http://documents-dds-ny.un.org/doc/'
+def get_document_url(doc_id=None, doc_name = None):
+    
+    doc = get_document(doc_id=doc_id, doc_name=doc_name).itervalues().next()
+#     print doc['scrape']
+    try:
+        n = doc['attributes']['n']
+        area = doc['scrape']['Area']
+        dist = doc['scrape']['Distribution']
+        url = '%s%s/%s/%s/%s/%s/pdf/%s.pdf?OpenElement'%(BASE_URL,area,dist,  n[:3],n[3:6], n[-2:],n)
+#         print url
+        return url
+    except Exception, e:
+        return None
+
+
+def download_file_to(source, destination):
+    name = source.split('/')[-1]
+    url = URL(source)
+    with open(os.path.join(destination, name), 'wb') as f:
+        d = url.open()
+        print d.read()
+        f.write(d.read())
+
+
 ## Printing Functions
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[46]:
+# In[22]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -955,7 +991,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[ ]:
+# In[23]:
 
 from IPython.display import HTML
 
@@ -991,14 +1027,14 @@ def json2html(obj, ignore_list = IGNORE_LIST):
 
 def get_doc_html_with_links(doc, url, use_doc_name=False, use_n=False):
     links = set(extract_links_from_document(doc))
-    print links
+#     print links
     html = get_doc_html(doc)
     linked_docs={}
     for link in links:
 #         print link
         link_doc =get_document(doc_id=link)
         if link_doc is not None:
-            print 'adding link ', link
+#             print 'adding link ', link
             linked_docs[link]=link_doc
     for link in linked_docs:
         ref = linked_docs[link].iterkeys().next() if use_doc_name else                 linked_docs[link].itervalues().next()['attributes']['n'] if use_n                 else link
@@ -1021,11 +1057,11 @@ def get_doc_html(doc):
     return html
 
 
-# In[ ]:
+# In[32]:
 
 # disable_pbars()
-# doc = get_documents(term=r'A/C.4/61/L.13', include_content=True)
-
+doc = get_documents(term=r'saudi', include_content=False)
+len(doc)
 # doc2 = get_document(term = r'A/C.4/61/L.13/Rev.1')
 # if doc is None:
 #     print 'not found'
@@ -1033,20 +1069,32 @@ def get_doc_html(doc):
 #     print len(doc)
 # print doc2
 # HTML(get_doc_html_with_links(doc, 'TEST', use_doc_name=True))
+for d in doc:
+    print len(doc[d]['links'])
 
 
-# In[ ]:
+# In[39]:
+
+# for d in doc:
+#     print doc[d]['links']
+#     break
+# docs = dict(sorted(doc.iteritems(), key=lambda (k,d) : len(doc[k]['links']),reverse=True ))
+# doc2 = [doc[d] for d in docs]
+# docs
+
+
+# In[26]:
 
 # sents = extract_sentences(doc)
 # tokens = tokenize_sentence_text(sents)
 
 
-# In[ ]:
+# In[27]:
 
 # dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
 
 
-# In[ ]:
+# In[27]:
 
 
 

@@ -24,9 +24,10 @@ def do_search(q):
     print ' IN SEARCH'
     documents = mun.get_documents(term=q)
     subjects = mun.get_subjects(docs=documents)
-    
+    sorted_documents = sorted(documents.iteritems(), 
+                    key=lambda (k,d) : len(documents[k]['links']),reverse=True )
     return render_template('results.html', 
-                documents=documents, 
+                documents=sorted_documents, 
                 subjects=subjects, 
                 form = SearchForm())
     
@@ -38,6 +39,9 @@ def show():
     
     document = mun.get_document(doc_name=doc_name, include_content = True)
     doc=document.itervalues().next()
+#    print doc['attributes']
+    url = mun.get_document_url(doc_name = doc_name)
+    doc['attributes']['url'] = '<a href="%s" target="_blank">Open original PDF</a>'%url 
     nchunks, vchunks = processing.get_document_chunks(document)
     return render_template('doc.html', doc_name=doc_name,
                 doc=doc,

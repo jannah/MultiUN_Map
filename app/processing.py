@@ -14,8 +14,12 @@ def load_modules():
     if chunker is None:
         chunker = mun.get_chunker(tag_set='brown', target='PNS')
         
-        
 def get_document_chunks(doc):
+    sentences = mun.extract_sentences(doc)
+    return mun.process_chunks(sentences=sentences, return_print=False)
+
+
+def get_document_chunks_manual(doc):
     load_modules()
     global chunker
     global tagger

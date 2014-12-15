@@ -38,6 +38,17 @@ and open the template in the editor.
 #search-results{
     float:left;
 }
+.search-result{
+    
+}
+.search-result h1{
+    
+}
+.search-result h2{
+    font-size:1em;
+    font-weight: bold;
+}
+
 .histogram rect{
     fill:steelblue;
 }

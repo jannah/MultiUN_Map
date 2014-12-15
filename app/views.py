@@ -6,6 +6,8 @@ import nltk
 from modules import multi_un_module as mun
 from app import processing
 mun.disable_pbars()
+
+
 print 'READY'
 @app.route('/', methods=['GET', 'POST'])
 def home():

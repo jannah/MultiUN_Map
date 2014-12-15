@@ -5,7 +5,7 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[1]:
+# In[40]:
 
 import nltk
 import re
@@ -20,7 +20,7 @@ from nltk.corpus import brown
 
 ## Progress Bar Settings
 
-# In[2]:
+# In[41]:
 
 show_pbars = True
 def disable_pbars():
@@ -35,7 +35,7 @@ def is_show_pbars():
 
 ### Load Data Path
 
-# In[3]:
+# In[42]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -49,7 +49,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[4]:
+# In[43]:
 
 def fix_unicode(s):
     text = ''
@@ -90,7 +90,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[5]:
+# In[44]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -127,7 +127,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[6]:
+# In[45]:
 
 from lxml import etree
 #data ={}
@@ -200,7 +200,7 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[7]:
+# In[46]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -210,7 +210,7 @@ MUN_MAP = None
 DOC_ID_MAP = None
 
 
-# In[31]:
+# In[47]:
 
 
 def load_doc_map():
@@ -324,7 +324,7 @@ def get_subjects(docs=None):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[9]:
+# In[48]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
@@ -342,7 +342,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[10]:
+# In[49]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -357,7 +357,7 @@ def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[11]:
+# In[50]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -390,7 +390,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[12]:
+# In[51]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -437,7 +437,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[13]:
+# In[52]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -472,7 +472,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[14]:
+# In[53]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -542,7 +542,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[15]:
+# In[54]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -642,7 +642,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[16]:
+# In[55]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
@@ -678,7 +678,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[17]:
+# In[56]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -742,7 +742,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[18]:
+# In[57]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -790,7 +790,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[19]:
+# In[58]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -807,7 +807,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[20]:
+# In[59]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=None):
@@ -857,7 +857,7 @@ def extract_links_from_text(text):
 
 # Parse the URL for the original PDF file and download
 
-# In[21]:
+# In[60]:
 
 from pattern.web import URL
 BASE_URL = 'http://documents-dds-ny.un.org/doc/'
@@ -889,7 +889,7 @@ def download_file_to(source, destination):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[22]:
+# In[61]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -991,7 +991,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[23]:
+# In[62]:
 
 from IPython.display import HTML
 
@@ -1057,11 +1057,11 @@ def get_doc_html(doc):
     return html
 
 
-# In[32]:
+# In[63]:
 
 # disable_pbars()
-doc = get_documents(term=r'saudi', include_content=False)
-len(doc)
+# doc = get_documents(term=r'saudi', include_content=False)
+# len(doc)
 # doc2 = get_document(term = r'A/C.4/61/L.13/Rev.1')
 # if doc is None:
 #     print 'not found'
@@ -1069,11 +1069,11 @@ len(doc)
 #     print len(doc)
 # print doc2
 # HTML(get_doc_html_with_links(doc, 'TEST', use_doc_name=True))
-for d in doc:
-    print len(doc[d]['links'])
+# for d in doc:
+#     print len(doc[d]['links'])
 
 
-# In[39]:
+# In[64]:
 
 # for d in doc:
 #     print doc[d]['links']
@@ -1083,18 +1083,18 @@ for d in doc:
 # docs
 
 
-# In[26]:
+# In[65]:
 
 # sents = extract_sentences(doc)
 # tokens = tokenize_sentence_text(sents)
 
 
-# In[27]:
+# In[66]:
 
 # dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
 
 
-# In[27]:
+# In[66]:
 
 
 

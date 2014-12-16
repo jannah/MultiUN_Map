@@ -662,7 +662,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[35]:
+# In[16]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
@@ -699,7 +699,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[17]:
+# In[28]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -723,7 +723,8 @@ def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_
     return f1, f2,f3
 
 #get the colloations based on chunks    
-def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None,                              target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
+def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, chunks=None,
+                             target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
 
     #I can pass pre-tagged sentences if needed
     if tagger is None:
@@ -731,12 +732,15 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
     if sentences:
         sent_tokens = tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
         tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger)
-    
-    chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
-    chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
-    flat_chunks = flatten_chunks(chunks, target=target)
-    flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
-    
+    if chunks is None:
+        chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
+        chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
+        flat_chunks = flatten_chunks(chunks, target=target)
+        flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
+    else:
+        chunks = [c for c,i in chunks]
+        flat_chunk_tokens = [token for flat_chunk in chunks for token in flat_chunk.split(' ')]
+        print flat_chunk_tokens
     bigram_measures = nltk.collocations.BigramAssocMeasures()
     trigram_measures = nltk.collocations.TrigramAssocMeasures()
     finder = BigramCollocationFinder.from_words(flat_chunk_tokens)
@@ -919,7 +923,7 @@ def sumy_paragraphs(paragraphs, sentence_count=5):
 
 # 
 
-# In[39]:
+# In[21]:
 
 import string
 import pycountry as pc
@@ -1376,7 +1380,7 @@ def get_doc_html(doc):
     return html
 
 
-# In[30]:
+# In[26]:
 
 
 

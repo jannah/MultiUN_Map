@@ -737,6 +737,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
         chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
         flat_chunks = flatten_chunks(chunks, target=target)
         flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
+        print flat_chunk_tokens
     else:
         chunks = [c for c,i in chunks]
         flat_chunk_tokens = [token for flat_chunk in chunks for token in flat_chunk.split(' ')]
@@ -757,7 +758,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
     f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
     f3= finder3.nbest(trigram_measures.pmi, finder_limit)
     f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
-    return f1, f2,f3,f4
+    return f1, f2,f3
 
 
 

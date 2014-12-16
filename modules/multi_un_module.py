@@ -919,7 +919,7 @@ def sumy_paragraphs(paragraphs, sentence_count=5):
 
 # 
 
-# In[34]:
+# In[39]:
 
 import string
 import pycountry as pc
@@ -1072,10 +1072,21 @@ def ner_document_analysis(sentences, tagged_sentences, nchunks=None, summary=Fal
     fd_gpe = nltk.FreqDist(ner_dictionary['GPE'])
     ner_fd_entities = nltk.FreqDist(get_ner_entities_list(ner_entities))
     
+    
+    def filter_fd(fd, l):
+        result = [(f,i) for (f,i) in fd if not any([li.lower() in f.lower() or f.lower() in li.lower() for li, li2 in l])]
+        return result
+    
+    def count_fd(fd):
+        return nltk.FreqDist([f for f,i in fd for sent in sentences if f in sent]).items()
+    
     allcountries = get_ner_countries(nchunks,ner_dictionary['GPE'])
     orgs = get_ner_organizations(nchunks, ner_fd_entities.items())
-
-    return orgs,allcountries
+    nchunks = filter_fd(nchunks, allcountries)
+    nchunks = filter_fd(nchunks, orgs)
+    orgs = count_fd(orgs)
+    allcountries = count_fd(allcountries)
+    return orgs,allcountries, nchunks
 
 
 ## Processing NGrams

@@ -53,7 +53,7 @@ def show():
     colloc = None
     
     nchunks, vchunks = mun.process_chunks(tagged_sentences=tagged_sentences, return_print=False)
-    orgs, countries= mun.ner_document_analysis(sentences, tagged_sentences, nchunks)
+    orgs, countries, nchunks= mun.ner_document_analysis(sentences, tagged_sentences, nchunks)
     colloc = processing.get_collocations(sentences)
     summary = processing.get_summary(doc)
     sumy = mun.sumy_paragraphs(paragraphs, sentence_count=5)

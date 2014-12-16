@@ -539,7 +539,7 @@ def get_default_treebank_tagger():
 
 
 #Tag the sentences based on the selected tagger
-def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(), show_pbar=None):
+def tag_pos_sentences(tokenized_sentences, tagger=get_brown_tagger(), show_pbar=None):
     show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     if show_pbar:
         pbar = ProgressBar(widgets=["tagging sentences", SimpleProgress(), Percentage(), Bar(), ETA()],
@@ -891,7 +891,7 @@ def get_after_heading(heading,paras):
 
 # 
 
-# In[30]:
+# In[20]:
 
 '''Sumy requires the following imports'''
 
@@ -914,6 +914,169 @@ def sumy_paragraphs(paragraphs, sentence_count=5):
     return summary_of_doc
 
 
+## Named Entity Recognition
+
+# 
+
+# In[34]:
+
+import string
+import pycountry as pc
+
+
+# Creating a master list of countries to compare to and filter from the library pycontry. 
+# Defines a dictionary with two arrays, common names and official names.
+
+def load_countries():
+    countries = {
+        'common':[],
+        'official': []
+    }
+
+    for c in pc.countries:
+        countries['common'].append(c.name)
+        if hasattr(c,'official_name'):
+            countries['official'].append(c.official_name)
+    print "Load_countries() DONE!"
+    return countries
+
+COUNTRIES = load_countries()
+# countries
+
+# Processes the tagged sentences to get NER entities for analysis. 
+def load_ner_entities(tagged_sentences, show_pbar = None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
+    if show_pbar:
+        pbar = ProgressBar(widgets=["Building Dictionary", SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(tagged_sentences)).start()
+    print "get_ner_dictionary_for_analysis() Started..."
+    entities = []
+    counter = 0
+    for sentence in tagged_sentences:
+        chunks = nltk.ne_chunk(sentence)
+        entities.extend([chunk for chunk in chunks if hasattr(chunk, 'node')])
+        counter+=1
+        if show_pbar:
+            pbar.update(counter)
+    if show_pbar:
+        pbar.finish()
+    return entities
+
+
+def get_ner_dictionary_for_analysis(tagged_sentences=None, entities = None, show_pbar = None):
+    show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
+    if entities is None:
+        entities = load_ner_entities(tagged_sentences, show_pbar)
+        
+    # Creating NER main dictionary to analyze and join with MUN library results
+    ner_dictionary = {
+        'GPE':[],
+        'PERSON' :[],
+        'ORGANIZATION' :[],
+        'GSP':[]
+    }
+    
+    for e in entities:
+        if not ner_dictionary.has_key(e.node):
+            ner_dictionary[e.node]=[]
+        phrase =[]
+        for item in e:
+            phrase.append(item[0])
+        ner_dictionary[e.node].append(' '.join(phrase))
+    
+    return ner_dictionary,entities
+
+
+#Selects the countries from the noun phrases detected that match the official list of countries from pycountry
+def get_filtered_countries(chunks):
+    print "get_filtered_countries() Started..."
+    filtered_countries = []
+    fd = nltk.FreqDist(chunks)
+    for f in fd.items():
+        for country in COUNTRIES['common']:
+            c = fix_unicode(f[0])
+            if country.find(c) != -1:
+                filtered_countries.append(f)
+
+    filtered_countries = nltk.FreqDist(filtered_countries).items()
+    filtered_countries = [w[0] for w in filtered_countries]
+    print "get_filtered_countries() DONE!"
+    return filtered_countries
+
+
+#Creating a Frequency Distribution with the NER entities
+def get_ner_entities_list(ner_entities):
+    print "get_ner_entities_list() Started..."
+    entities = []
+    for node in ner_entities:
+        phrase = []
+        for element in node:
+            phrase.append(element[0])
+        entities.append((node.node,' '.join(phrase)))
+    print "get_ner_entities_list() DONE!"
+    return entities
+
+
+# Returns the list of countries/continents joined from the NER GEP list and the MUN Library chunker.
+
+def get_ner_countries(nchunks, ner_chunks):
+    print "get_ner_countries() Started..."
+    all_countries = get_filtered_countries(nchunks) + get_filtered_countries(ner_chunks)
+    fd = nltk.FreqDist(all_countries)
+    all_countries = []
+    for c in fd.keys():
+        all_countries.append(c[0])
+#     fd = nltk.FreqDist(all_countries).keys()
+#     fd.sort()
+    print "get_ner_countries() DONE!"
+    return nltk.FreqDist(all_countries).items()
+
+
+def get_ner_organizations(nchunks,ner_chunks):
+    print "get_ner_organizations() Started..."
+    unorgs = ['Commission','General Assembly','Secretariat','Committee', 'United Nations', 'Assembly','Convention ']
+    norgs = [(w[0][1],w[1]) for w in ner_chunks if w[0][0] == 'ORGANIZATION']
+    all_orgs = nchunks + norgs
+    all_orgs = [w[0] for w in all_orgs]
+    all_orgs = nltk.FreqDist(all_orgs).keys()
+    results = []
+    for w in all_orgs:
+        for org in unorgs:
+            if type(w) == tuple:
+                print w
+            if w.find(org) !=-1 and analyze_for_monograms(w) and w != org:
+                results.append(w)
+    print "get_ner_organizations() DONE!"
+    return nltk.FreqDist(results).items()
+
+
+# Checks a text to make sure it isn't just a 
+def analyze_for_monograms(text):
+    tokens = nltk.word_tokenize(text)
+    if len(tokens[0])>1 and len(tokens[-1])>1:
+        return True
+    else: 
+        return False
+
+
+def ner_document_analysis(sentences, tagged_sentences, nchunks=None, summary=False):
+
+    if nchunks == None:
+        nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
+        nchunks = extract_target_from_chunks(nchunks, target='PNS')
+        nchunks = nltk.FreqDist(nchunks).items()
+    
+    
+    ner_dictionary,ner_entities = get_ner_dictionary_for_analysis(tagged_sentences)
+    
+    fd_gpe = nltk.FreqDist(ner_dictionary['GPE'])
+    ner_fd_entities = nltk.FreqDist(get_ner_entities_list(ner_entities))
+    
+    allcountries = get_ner_countries(nchunks,ner_dictionary['GPE'])
+    orgs = get_ner_organizations(nchunks, ner_fd_entities.items())
+
+    return orgs,allcountries
+
+
 ## Processing NGrams
 
 # Generates 5 different frequency distributions:
@@ -925,7 +1088,7 @@ def sumy_paragraphs(paragraphs, sentence_count=5):
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[21]:
+# In[22]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -942,7 +1105,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[22]:
+# In[23]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=None):
@@ -992,7 +1155,7 @@ def extract_links_from_text(text):
 
 # Parse the URL for the original PDF file and download
 
-# In[23]:
+# In[24]:
 
 from pattern.web import URL
 BASE_URL = 'http://documents-dds-ny.un.org/doc/'
@@ -1024,7 +1187,7 @@ def download_file_to(source, destination):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[24]:
+# In[25]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -1049,9 +1212,14 @@ def preprint_FreqDists(fds, titles=None, limit = 50, csv=False):
         for fd in fds:
             key = ''
             val = 0
-            if i < len(fd.items()):
-                key =fd.items()[i][0]
-                val = fd.items()[i][1]
+            try:
+                if i < len(fd.items()):
+                    key =fd.items()[i][0]
+                    val = fd.items()[i][1]
+            except:
+                key = fd[i][0]
+                val = fd[i][1]
+                pass
             if csv:
                 line='%s,"%s",%d'%(line,key,val)
             else:
@@ -1130,7 +1298,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[25]:
+# In[26]:
 
 from IPython.display import HTML
 
@@ -1196,44 +1364,7 @@ def get_doc_html(doc):
     return html
 
 
-# In[26]:
-
-# disable_pbars()
-# doc = get_documents(term=r'saudi', include_content=False)
-# len(doc)
-# doc2 = get_document(term = r'A/C.4/61/L.13/Rev.1')
-# if doc is None:
-#     print 'not found'
-# else:
-#     print len(doc)
-# print doc2
-# HTML(get_doc_html_with_links(doc, 'TEST', use_doc_name=True))
-# for d in doc:
-#     print len(doc[d]['links'])
-
-
-# In[27]:
-
-# for d in doc:
-#     print doc[d]['links']
-#     break
-# docs = dict(sorted(doc.iteritems(), key=lambda (k,d) : len(doc[k]['links']),reverse=True ))
-# doc2 = [doc[d] for d in docs]
-# docs
-
-
-# In[28]:
-
-# sents = extract_sentences(doc)
-# tokens = tokenize_sentence_text(sents)
-
-
-# In[29]:
-
-# dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
-
-
-# In[29]:
+# In[30]:
 
 
 

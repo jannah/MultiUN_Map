@@ -108,6 +108,8 @@
     <div id="document-info">
         
         {{ print_dict(doc.attributes, none, 'Attributes', 'document-attributes') }}
+        {{ print_fd(orgs, 'Organizations', 'subjects') }}
+        {{ print_fd(orgs, 'Countries', 'subjects') }}
         {{ print_fd(nchunks, 'Noun Chunks', 'nchunks') }}
         {{ print_fd(vchunks, 'Noun-Verb Chunks', 'vchunks') }}
         {{ print_list(doc.scrape.Subjects, 'Subjects', 'subjects') }}

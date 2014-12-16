@@ -5,7 +5,7 @@ from flask import Flask, request, redirect,flash, url_for,render_template
 import nltk
 from modules import multi_un_module as mun
 from app import processing
-mun.disable_pbars()
+#mun.disable_pbars()
 
 
 print 'READY'
@@ -46,17 +46,23 @@ def show():
     doc['attributes']['url'] = '<a href="%s" target="_blank">Open original PDF</a>'%url 
     paragraphs = mun.extract_paragraphs(document)
     sentences = mun.extract_sentences(document)
+    tokenized_sentences = mun.tokenize_sentence_text(sentences)
+    tagged_sentences = mun.tag_pos_sentences(tokenized_sentences)
     nchunks = None
     vchunks = None
     colloc = None
-#    nchunks, vchunks = mun.process_chunks(sentences=sentences, return_print=False)
-#    colloc = processing.get_collocations(sentences)
+    
+    nchunks, vchunks = mun.process_chunks(tagged_sentences=tagged_sentences, return_print=False)
+    orgs, countries= mun.ner_document_analysis(sentences, tagged_sentences, nchunks)
+    colloc = processing.get_collocations(sentences)
     summary = processing.get_summary(doc)
     sumy = mun.sumy_paragraphs(paragraphs, sentence_count=5)
     return render_template('doc.html', doc_name=doc_name,
                 doc=doc,
                 nchunks=nchunks,
                 vchunks=vchunks,
+                orgs=orgs,
+                countries=countries,
                 collocations = colloc,
                 summary=summary,
                 sumy=sumy,

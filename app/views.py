@@ -44,14 +44,21 @@ def show():
 #    print doc['attributes']
     url = mun.get_document_url(doc_name = doc_name)
     doc['attributes']['url'] = '<a href="%s" target="_blank">Open original PDF</a>'%url 
-    
+    paragraphs = mun.extract_paragraphs(document)
     sentences = mun.extract_sentences(document)
-    nchunks, vchunks = mun.process_chunks(sentences=sentences, return_print=False)
-    colloc = processing.get_collocations(sentences)
+    nchunks = None
+    vchunks = None
+    colloc = None
+#    nchunks, vchunks = mun.process_chunks(sentences=sentences, return_print=False)
+#    colloc = processing.get_collocations(sentences)
+    summary = processing.get_summary(doc)
+    sumy = mun.sumy_paragraphs(paragraphs, sentence_count=5)
     return render_template('doc.html', doc_name=doc_name,
                 doc=doc,
                 nchunks=nchunks,
                 vchunks=vchunks,
                 collocations = colloc,
+                summary=summary,
+                sumy=sumy,
                 mun=mun)
     

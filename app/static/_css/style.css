@@ -108,7 +108,13 @@ and open the template in the editor.
 .fd-table td{
     padding:5px;
 }
-.highlight-key,
+.highlight-key, .highlight-0,
 .highlight{
     background-color:yellow;
+}
+.highlight-1{
+    background-color: lightgreen;
+}
+.highlight-2{
+    background-color: lightsalmon;
 }

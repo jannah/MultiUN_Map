@@ -13,10 +13,12 @@
     <div class="panel-heading">{{title}}</div>
     <div class="panel-body">
         <table class="fd-table table">
+             {% if fd is not none %}
             <tr><td>Freq</td><td>Item</td></tr>
             {% for k,v in fd %}
             <tr><td class="key">{{v}}</td><td class="value">{{k}}</td></tr>
             {% endfor %}
+            {% endif %}
         </table>
     </div>
 </div>
@@ -27,11 +29,13 @@
     <div class="panel-body">
         <table class="fd-table table">
             <!--<tr><td>Freq</td><td>Item</td></tr>-->
+             {% if arr is not none %}
             {% for k,v in arr.iteritems()%}
             {% if targets is none or k in targets %}
             <tr><td >{{k}}</td><td>{{v|safe}}</td></tr>
             {% endif %}
             {% endfor %}
+            {% endif %}
         </table>
     </div>
 </div>
@@ -41,45 +45,61 @@
     <div class="panel-heading">{{title}}</div>
     <div class="panel-body">
         <table class="fd-table table">
+             {% if arr is not none %}
             {% for v in arr %}
             <tr><td class="value">{{v}}</td></tr>
             {% endfor %}
+            {% endif %}
         </table>
     </div>
 </div>
 {%- endmacro %}
  
 {% macro print_nested_list(arr,title, id) -%}
-<script>console.log({{arr}})</script>
+
 <div id="{{id}}" class="document-part panel panel-default">
     <div class="panel-heading">{{title}}</div>
     <div class="panel-body">
         <table class="fd-table table">
+             {% if arr is not none %}
             {% for v in arr %}
             <tr>
                 {% for v2 in v %}
-                
-            <script>console.log({{v2}})</script>
                 <td class="value">{{v2}}</td>
                 
                 {% endfor %}
             </tr>
             {% endfor %}
+            {% endif %}
         </table>
     </div>
 </div>
 {%- endmacro %}
  
 
+{% macro print_html(text,title, id) -%}
+<div id="{{id}}" class="panel panel-default">
+    <div class="panel-heading">{{title}}</div>
+    <div class="panel-body">
+         {% if text is not none %}
+        {{text}}
+        {% endif %}
+    </div>
+</div>
+{%- endmacro %}
 {% macro print_text(text,title, id) -%}
 <div id="{{id}}" class="panel panel-default">
     <div class="panel-heading">{{title}}</div>
     <div class="panel-body">
-        {{text}}
+        {% if text is not none %}
+        {% for t in text %}
+        <p>{{t}}</p>
+        {% endfor %}
+        {% endif %}
+        
     </div>
 </div>
 {%- endmacro %}
-
 
 <div id='document-display'>
     <dv id="document-header">
@@ -88,16 +108,21 @@
     <div id="document-info">
         
         {{ print_dict(doc.attributes, none, 'Attributes', 'document-attributes') }}
-        {{ print_fd(nchunks[:20], 'Noun Chunks', 'nchunks') }}
-        {{ print_fd(vchunks[:20], 'Noun-Verb Chunks', 'vchunks') }}
+        {{ print_fd(nchunks, 'Noun Chunks', 'nchunks') }}
+        {{ print_fd(vchunks, 'Noun-Verb Chunks', 'vchunks') }}
         {{ print_list(doc.scrape.Subjects, 'Subjects', 'subjects') }}
         {{ print_nested_list(collocations, 'Collocations', 'collocations')}}
     </div>
-
-    {{ print_text(mun.get_doc_html_with_links(doc, 
+<div id="document-content">
+    {{ print_text(summary, 'Summary (Manual)', 'document-summary')}}
+    {{ print_text(sumy, 'Summary (With Sumy)', 'document-sumy')}}
+    {{ print_html(mun.get_doc_html_with_links(doc, 
                 '%s?doc_name='%url_for('show'), 
                 use_doc_name=True) | safe,
-        'Full Text', 'document-content') }}
+        'Full Text', 'document-full-text') }}
+    
+</div>
+    
 
 </div>
 {% endblock %}

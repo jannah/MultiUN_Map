@@ -5,8 +5,10 @@
 
 # This is a list of all the service functions used to access and process the Multi UN corpus.
 
-# In[11]:
+# In[1]:
 
+# from __future__ import absolute_import
+# from __future__ import division, unicode_literals
 import nltk
 import re
 import os
@@ -18,9 +20,10 @@ from progressbar import AnimatedMarker, Bar, BouncingBar,                       
 from nltk.corpus import brown
 
 
+
 ## Progress Bar Settings
 
-# In[12]:
+# In[2]:
 
 show_pbars = True
 def disable_pbars():
@@ -35,7 +38,7 @@ def is_show_pbars():
 
 ### Load Data Path
 
-# In[13]:
+# In[3]:
 
 FILENAME = inspect.getframeinfo(inspect.currentframe()).filename
 F_PATH = os.path.dirname(os.path.abspath(FILENAME))
@@ -49,7 +52,7 @@ PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO
 
 ## Fix Unicode and Incomplete Sentences
 
-# In[14]:
+# In[4]:
 
 def fix_unicode(s):
     text = ''
@@ -90,7 +93,7 @@ def fix_incomplete_sentences(para):
 
 ### Load Files
 
-# In[15]:
+# In[5]:
 
 def load_files(year = None, raw=True):
     years = []
@@ -127,7 +130,7 @@ def load_files_by_year(year, raw=True):
 
 ## Load XML Files
 
-# In[16]:
+# In[6]:
 
 from lxml import etree
 #data ={}
@@ -200,7 +203,7 @@ def load_xml_file(filename = None, content=True, year = None):
 
 # 
 
-# In[17]:
+# In[7]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -212,7 +215,7 @@ MAP_FILE = 'map.json'
 DOC_ID_MAP = None
 
 
-# In[39]:
+# In[8]:
 
 def change_map_file(map_file=MAP_FILE):
     global MAP_FILE
@@ -336,16 +339,19 @@ def get_subjects(docs=None):
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[19]:
+# In[9]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
+    if 'content' in doc_dict:
+        doc_dict = {'temp':doc_dict}
     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
     if merge_paragraphs:
         flat = [" ".join(para) for para in flat]
     return flat
 
 def extract_sentences(doc_dict):
-    print 'flattening'
+    if 'content' in doc_dict:
+        doc_dict = {'temp':doc_dict}
     text = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
     text = [sent for para in text for sent in para]
         
@@ -354,7 +360,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[20]:
+# In[10]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -369,7 +375,7 @@ def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[21]:
+# In[11]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -402,10 +408,12 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[22]:
+# In[12]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
+
+    
 
 def tokenize_text(text, alnum_only = False,  alpha_only = False,remove_stopwords=False, use_pattern = 2):
     pattern1 = ["\w+[\-|']\w+", #words joined with '-' or words with ' in them \
@@ -449,7 +457,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[23]:
+# In[13]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -484,7 +492,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[24]:
+# In[14]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -554,7 +562,7 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_default_treebank_tagger(),
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[25]:
+# In[15]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -654,7 +662,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[26]:
+# In[16]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
@@ -690,7 +698,7 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
 # The output is four finders nbests:
 # (bigram, trigram) x (pmi, chi_sq)
 
-# In[27]:
+# In[17]:
 
 from nltk.collocations import *
 #find pure word frequency collocations
@@ -711,7 +719,7 @@ def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_
     f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
     f3= finder3.nbest(trigram_measures.pmi, finder_limit)
     f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
-    return f1, f2,f3,f4
+    return f1, f2,f3
 
 #get the colloations based on chunks    
 def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None,                              target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
@@ -754,7 +762,7 @@ def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, 
 # 
 # It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[28]:
+# In[18]:
 
 from nltk.stem.snowball import SnowballStemmer
 snowball_stemmer = SnowballStemmer("english")
@@ -791,6 +799,121 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 
 
 
+## Text Summarization
+
+### Manual Summerizations (TO DOCUMENT)
+
+# 
+
+# In[19]:
+
+SUMMARY_KEYWORDS_START=['in order to', 'thus', 'to sum up', 'finally', 'in conclusion', 'to conclude', 'to summerize', 'in summary', 'therefore'
+                'goal', 'the ultimate goal', 'finally']
+SUMMARY_KEYWORDS_BODY = ['goal', 'summar', 'conclu', 'goal',' aim','objective', 'decide', 'decision', 'focus', 'recommen', 'request']
+
+def get_document_summary(doc):
+    if 'content' not in doc:
+        doc = doc.itervalues().next()
+    # got the document title
+    
+    paragraphs = extract_paragraphs(doc)
+    sentences = extract_sentences(doc)
+    
+    #get first sentence if each paragraph that is not a heading
+    sent_first = [p[0] for p in paragraphs if not is_heading(p) and not p[0].startswith('(')]
+    sent_first_tokenized = tokenize_sentence_text(sent_first, remove_stopwords=True)
+    
+    #get title bigrams and trigrams
+    title = doc['scrape']['Title']
+    title_bigrams = get_frequent_ngrams(sentences=[title], ngram_length=2, remove_stopwords=True)
+    title_trigrams = get_frequent_ngrams(sentences=[title], ngram_length=3, remove_stopwords=True)
+    
+    # get bigrams and trigrams from document
+    bigrams = get_frequent_ngrams(sentences=sentences, ngram_length=2, remove_stopwords=True)
+    trigrams = get_frequent_ngrams(sentences=sentences, ngram_length=3, remove_stopwords=True)
+    
+    # get the first paragraph after specific headings
+    intro = get_after_heading('introduction', paragraphs)
+    summary = get_after_heading('summary', paragraphs)
+    conclusion = get_after_heading('conclusion', paragraphs)
+    
+    #extract features from the document
+    features = [(i,check_summary_features(sent_first[i], bigrams, trigrams, title_bigrams,title_trigrams)) 
+                for i in range(len(sent_first))]
+    
+    #sort the features by total
+    sorted_features = sorted(features, key=lambda (i,f): f['total'], reverse=True)
+    
+    #get top 10 sentences
+    top_features =sorted_features[:10]
+    top_sents = [ (i, r['sent']) for i, r in top_features
+                     if (len(intro)>0 and r['sent'] != intro[0][1][0])
+                     or (len(summary)>0 and r['sent'] != summary[0][1][0])
+                     or (len(summary)>0 and r['sent'] != summary[0][1][0])]
+    
+    #flattent the paragraphs
+    intro = [(i, " ".join(f)) for i,f in intro]
+    summary = [(i, " ".join(f)) for i,f in summary]
+    conclusion = [(i, " ".join(f)) for i,f in conclusion]
+    
+    
+    #combine
+    summary = intro  + top_sents + summary + conclusion
+    summary = sorted(summary)
+    return summary
+    
+    
+def check_summary_features(sent, bigrams, trigrams, title_bigrams, title_trigrams):
+    result={}
+#     result = {'in_title':0, 'tri':0, 'keyword':0, 'keyword_s':0} 
+    result['in_title_bigrams'] =sum([1 for bi, freq in title_bigrams.items()[:20] if bi.lower() in sent.lower()])
+    result['in_title_trigrams'] =sum([1 for tri, freq in title_trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
+    result['trigrams'] = sum([1 for tri, freq in trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
+    result['bigrams'] = sum([1 for bi, freq in bigrams.items()[:20] if tri.lower() in sent.lower()])
+    result['keyword_s'] = sum([1 for k in SUMMARY_KEYWORDS_START if k in sent.lower()])*3
+    result['keyword'] = sum([1 for k in SUMMARY_KEYWORDS_BODY if k in sent.lower()])
+    total = sum([v for v in result.itervalues()])
+#     print total
+    result['total'] = total
+    result['sent'] = sent
+    return result
+
+
+def get_after_heading(heading,paras):
+    for i in range(len(paras)):
+        p = paras[i]
+        if is_heading(p) and " ".join(p).lower()==heading.lower() and  i<len(paras):
+            return [(i+1, paras[i+1])] 
+    return []
+
+
+### Text Summarization using Sumy Package
+
+# 
+
+# In[30]:
+
+'''Sumy requires the following imports'''
+
+
+from sumy.parsers.html import HtmlParser
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer as Summarizer
+from sumy.nlp.stemmers import Stemmer
+from sumy.utils import get_stop_words
+
+def sumy_paragraphs(paragraphs, sentence_count=5):
+    text = "\n".join([" ".join(p) for p in paragraphs])
+    LANGUAGE = "english"  
+    parser = PlaintextParser.from_string(text,  Tokenizer(LANGUAGE))
+    stemmer = Stemmer(LANGUAGE)
+    summarizer = Summarizer(stemmer)
+    summarizer.stop_words = get_stop_words(LANGUAGE)
+    summary_of_doc = [str(sent) for sent in summarizer(parser.document, sentence_count)]
+    return summary_of_doc
+
+
 ## Processing NGrams
 
 # Generates 5 different frequency distributions:
@@ -802,7 +925,7 @@ def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnu
 # 
 # All ngrams are alpha numeric, lowercase, and without stopwords
 
-# In[29]:
+# In[21]:
 
 def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
     sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
@@ -819,7 +942,7 @@ def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
 
 # Extracts document references from text
 
-# In[30]:
+# In[22]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=None):
@@ -869,7 +992,7 @@ def extract_links_from_text(text):
 
 # Parse the URL for the original PDF file and download
 
-# In[31]:
+# In[23]:
 
 from pattern.web import URL
 BASE_URL = 'http://documents-dds-ny.un.org/doc/'
@@ -901,7 +1024,7 @@ def download_file_to(source, destination):
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[32]:
+# In[24]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -1007,7 +1130,7 @@ def print_collocations_finders(finders, chunked=False):
 
 ## Generate HTML
 
-# In[33]:
+# In[25]:
 
 from IPython.display import HTML
 
@@ -1073,7 +1196,7 @@ def get_doc_html(doc):
     return html
 
 
-# In[34]:
+# In[26]:
 
 # disable_pbars()
 # doc = get_documents(term=r'saudi', include_content=False)
@@ -1089,7 +1212,7 @@ def get_doc_html(doc):
 #     print len(doc[d]['links'])
 
 
-# In[35]:
+# In[27]:
 
 # for d in doc:
 #     print doc[d]['links']
@@ -1099,18 +1222,18 @@ def get_doc_html(doc):
 # docs
 
 
-# In[36]:
+# In[28]:
 
 # sents = extract_sentences(doc)
 # tokens = tokenize_sentence_text(sents)
 
 
-# In[37]:
+# In[29]:
 
 # dict([(MUN_MAP[doc]['attributes']['id'], doc) for doc in MUN_MAP])
 
 
-# In[37]:
+# In[29]:
 
 
 

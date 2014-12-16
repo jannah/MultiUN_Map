@@ -3,10 +3,36 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-$(document).on('ready', function(){
+//Fromhttp://stackoverflow.com/questions/2068272/getting-a-jquery-selector-for-an-element
+jQuery.fn.getPath = function() {
+    if (this.length != 1)
+        throw 'Requires one element.';
+
+    var path, node = this;
+    while (node.length) {
+        var realNode = node[0], name = realNode.localName;
+        if (!name)
+            break;
+        name = name.toLowerCase();
+
+        var parent = node.parent();
+
+        var siblings = parent.children(name);
+        if (siblings.length > 1) {
+            name += ':eq(' + siblings.index(realNode) + ')';
+        }
+
+        path = name + (path ? '>' + path : '');
+        node = parent;
+    }
+
+    return path;
+};
+
+$(document).on('ready', function() {
     init_mun();
 })
-function init_mun(){
+function init_mun() {
     console.log('READY')
     console.log(doc)
     enableHighlight('.panel-body .value')
@@ -21,42 +47,74 @@ function enableHighlight(target)
 {
 //    var targets = $(target)
 //    console.log(targets)
-    $(target).on('click', function(){
+    $(target).on('click', function() {
         var self = $(this)
         var text = self.text();
+        if (text.indexOf('<->') > -1)
+        {
+
+            var colloc = text.split(' <-> ');
+            $('.highlight-key').removeClass('highlight-key');
+//            self.addClass('highlight-key');
+            for (var i = 0, j = colloc.length; i < j; i++)
+            {
+                console.log('tagging ' + colloc[i])
+
+                $('.highlight-' + i).removeClass('highlight-' + i);
+
+                console.log(self.getPath())
+                highlight(colloc[i].trim(),
+                        'highlight-' + i, [self.getPath(),
+                            "#document-content"]);
+
+            }
+        }
+        else {
+            console.log(text)
+            $('.highlight-key').removeClass('highlight-key');
+            self.addClass('highlight-key');
+            highlight(text, 'highlight', ["#document-content"]);
+        }
 //        console.log('clicking')
-        console.log(text)
-        $('.highlight-key').removeClass('highlight-key');
-        self.addClass('highlight-key');
-        highlight(text);
-        
+
     })/*
-    for(var i in targets)
-    {
-        var el = targets[i]
-        $(el).on('click', function(){
-            var text = $(this).text()
-            console.log('highlighting '+text)
-            $(this).addClass('highlight')
-        })
-    }*/
+     for(var i in targets)
+     {
+     var el = targets[i]
+     $(el).on('click', function(){
+     var text = $(this).text()
+     console.log('highlighting '+text)
+     $(this).addClass('highlight')
+     })
+     }*/
 }
-function highlight(text)
+function highlight(text, hclass, targets)
 {
-    $('.highlight').removeClass('highlight')
-    inputText = document.getElementById("document-content")
-    var innerHTML = inputText.innerHTML
-    var re = new RegExp(text, 'g');
-    var html = "<span class='highlight'>"+text+"</span>"
-    inputText.innerHTML = innerHTML.replace(re, html);
-    /*
-    var index = innerHTML.indexOf(text);
-    if ( index >= 0 )
-    { 
-        innerHTML = innerHTML.substring(0,index) + "<span class='highlight'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
-        inputText.innerHTML = innerHTML 
+    $('.' + hclass).removeClass(hclass)
+    for (var t in targets)
+    {
+        var target = targets[t]
+        hclass = hclass ? hclass : 'highlight';
+
+
+//    inputText = document.getElementById(target)
+//    inputText =$(target)
+//    var innerHTML = inputText.innerHTML
+        console.log(hclass)
+        var innerHTML = $(target).html();
+        var re = new RegExp(text, 'g');
+        var html = "<span class='" + hclass + "'>" + text + "</span>";
+//    inputText.innerHTML = innerHTML.replace(re, html);
+        $(target).html(innerHTML.replace(re, html));
     }
-*/
+    /*
+     var index = innerHTML.indexOf(text);
+     if ( index >= 0 )
+     { 
+     innerHTML = innerHTML.substring(0,index) + "<span class='highlight'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
+     inputText.innerHTML = innerHTML 
+     }
+     */
 }
 Histogram = function(target, data, width, height, title) {
     console.log(data);
@@ -117,7 +175,7 @@ Histogram = function(target, data, width, height, title) {
                     return xScale(d.values);
                 }
             })
-            .on('click',function(d) {
+            .on('click', function(d) {
                 alert(d.label);
             })
     var yAxisGroup = svg.append('g').attr(
@@ -130,9 +188,9 @@ Histogram = function(target, data, width, height, title) {
             .call(yAxis)
             .selectAll("text")
             .style("text-anchor", "start")
-            .attr({"dx":"2em", "dy": ".2em",'unselectable':'on'})
+            .attr({"dx": "2em", "dy": ".2em", 'unselectable': 'on'})
             .classed('unselectable', true)
-               .on('click',function(d) {
+            .on('click', function(d) {
                 alert(d);
             })
 //            .attr("transform", function(d) {

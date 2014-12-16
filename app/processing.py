@@ -21,6 +21,9 @@ def get_document_chunks(doc):
 def flatten_collocation(cl):
     return [" <-> ".join(c) for c in cl]
 
+def get_summary(doc):
+    summary = mun.get_document_summary(doc)
+    return [s[1] for s in summary]
 
 def get_collocations(sentences):
     colloc= mun.get_collocations(sentences=sentences)

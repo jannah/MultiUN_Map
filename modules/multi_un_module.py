@@ -662,7 +662,7 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[16]:
+# In[35]:
 
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
@@ -676,7 +676,8 @@ def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  r
  # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
  if remove_months:
      import calendar
-     nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 and chunk not in calendar.month_name]
+     nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 
+                and not any(mn in chunk.split(' ') for mn in calendar.month_name)]
  
  vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
  vchunks = extract_target_from_chunks(vchunks, target='VNS')

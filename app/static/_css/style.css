@@ -46,7 +46,7 @@ and open the template in the editor.
 #search-results{
     float: left;
     display: inline-block;
-    width: 800px;
+    width: calc(100% - 275px)
     margin-left: 20px;
 }
 .search-result{

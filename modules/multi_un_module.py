@@ -913,6 +913,7 @@ def print_FreqDist(fd, limit =0):
 def print_FreqDists(fds, titles=None, limit = 50, csv=False):
     return print_csv_table(preprint_FreqDists(fds, titles, limit, csv=True))
 
+
 def preprint_FreqDists(fds, titles=None, limit = 50, csv=False):
     lines = ''
     html_str =''
@@ -937,6 +938,7 @@ def preprint_FreqDists(fds, titles=None, limit = 50, csv=False):
         lines+='%s\n'%line
     return lines
 
+
 def print_csv_table(csv_lines):
     import pandas, io
     if isinstance(csv_lines, list):
@@ -944,6 +946,7 @@ def print_csv_table(csv_lines):
     
     plines= pandas.read_csv(io.BytesIO(str(csv_lines)))
     return plines
+    
     
 def print_pos_tagged_sentences(tagged_sentences):
     formatted_sents = []
@@ -962,6 +965,7 @@ def print_pos_tagged_sentences(tagged_sentences):
         formatted_sents.append(','.join(tags))
         formatted_sents.append( ",".join([' ' for i in range(max_tokens)]))
     return formatted_sents
+
 
 #allow me to limit the number of chars in the output whithout whitespace. I am using a table output that generates tons of white space
 def shrink_output_text(text, char_limit=2500, count_whitespace = False):
@@ -1013,7 +1017,7 @@ def is_heading(para):
 
 
 def json2html(obj, ignore_list = IGNORE_LIST):
-    html = '<table>'
+    html = '<table class="table">'
     isDict = isinstance(obj, dict)
     i = 0
     for o in obj:

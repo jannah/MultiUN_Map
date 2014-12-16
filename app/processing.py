@@ -18,6 +18,21 @@ def get_document_chunks(doc):
     sentences = mun.extract_sentences(doc)
     return mun.process_chunks(sentences=sentences, return_print=False)
 
+def flatten_collocation(cl):
+    return [" <-> ".join(c) for c in cl]
+
+
+def get_collocations(sentences):
+    colloc= mun.get_collocations(sentences=sentences)
+    col = []
+    for i in range(len(colloc[0])):
+        row = [" <-> ".join(c[i]) for c in colloc]
+#     print row
+        col.append(row)
+    return col
+    
+    
+
 
 def get_document_chunks_manual(doc):
     load_modules()

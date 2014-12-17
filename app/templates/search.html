@@ -12,6 +12,7 @@
                 </form>
             </div>
 <div id='subjects-histogram'>
+    
     <script>
         var subjects = {{subjects | tojson | safe }};
         console.log(subjects);
@@ -23,5 +24,7 @@
         return b.values-a.values;});
         histogram = new Histogram('#subjects-histogram', fd.slice(0,19), 200, 600, 'Subjects');
     </script>
+    
 </div>
+<h2> To open original PDf Files, please logon to the<a href='http://documents.un.org/' target='_blank'>  UN document website</a> once and search for any document. </b2>
 {% endblock %}

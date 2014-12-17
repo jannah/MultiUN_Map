@@ -20,6 +20,7 @@ The file is a massive library of reusable components. It contains all the docume
     ipython nbconvert --to python multi_un_module.ipynb
 
 ##Search the Corpus and Process.ipynb
+A replica of the app (see below)
 
 # Test Data Files
 for testing, extract the zip files
@@ -43,3 +44,6 @@ Simple Flask App to faclitate search and processing of documents.
 ## IPython Notebook
 An IPython notebook was created to replicat the main functionality of the user interface.
 Open the **"modules\Search the Corpus and Process.ipynb**" notebook
+
+Sample Gist: 
+http://nbviewer.ipython.org/973f3308b355d904a981

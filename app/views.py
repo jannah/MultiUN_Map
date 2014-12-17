@@ -51,12 +51,12 @@ def show():
     nchunks = None
     vchunks = None
     colloc = None
-    
+    sumy = None
     nchunks, vchunks = mun.process_chunks(tagged_sentences=tagged_sentences, return_print=False)
     orgs, countries, nchunks= mun.ner_document_analysis(sentences, tagged_sentences, nchunks)
     colloc = processing.get_collocations(sentences)
     summary = processing.get_summary(doc)
-    sumy = mun.sumy_paragraphs(paragraphs, sentence_count=5)
+#    sumy = mun.sumy_paragraphs(paragraphs, sentence_count=5)
     return render_template('doc.html', doc_name=doc_name,
                 doc=doc,
                 nchunks=nchunks,

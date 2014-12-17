@@ -144,4 +144,35 @@ and open the template in the editor.
 }
 .highlight-2{
     background-color: lightsalmon;
+    
+}
+
+
+@media print{
+    #document-info{
+        width:100%;
+    }
+
+    #document-info .panel{
+        width:50%;
+        float:left;
+
+
+    }
+    #document-info .panel-body{
+        max-height:none;
+        overflow-x: none;
+        word-wrap:break-word;
+        
+    }
+    td{
+       word-wrap:break-word;
+       word-break:break-all;
+    }
+    table{
+/*         table-layout: ; */
+    }
+    #document-content{
+        width:100%
+    }
 }

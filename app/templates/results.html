@@ -13,6 +13,12 @@
     <h2>Subjects</h2>
     <p> {{ ", ".join(doc.scrape.Subjects) }}</p>
     <p>Links: {{ doc.links|length}}</p>
+    <p>
+    {% for k in doc.scrape['Display PDF File'] %}
+    <span><a href='{{k.link}}' target='_blank'>{{k.lang}}</a>, </span>
+    {% endfor %}
+    </p>
+    <p></p>
 </div>
 </tr></td>
 {% endfor %}

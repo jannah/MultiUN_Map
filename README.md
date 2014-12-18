@@ -28,11 +28,12 @@ Gist: http://nbviewer.ipython.org/gist/jannah/793764fb47c230bb3b56
 ##Search the Corpus and Process.ipynb (modules/)
 An IPython notebook was created to replicat the main functionality of the user interface.
 Open the **"modules\Search the Corpus and Process.ipynb**" notebook
+
 Sample Gist: 
 http://nbviewer.ipython.org/gist/jannah/a110569ca7a6487d31ce
 
 ## Multi-process Scraping File (util/scrape/)
-** Inspired by ** [Sebastian Raschka](http://sebastianraschka.com)  
+**Inspired by** [Sebastian Raschka](http://sebastianraschka.com)  
 A module to scrape the UN website using the Selenium interactive scraper. The module can use mulitple processes to run parallel scrapes.
 
 Gist: http://nbviewer.ipython.org/gist/jannah/e0dc1119aa9ba8a920a9
@@ -43,11 +44,13 @@ This module reads the docmap generated from the corpus with the information obta
 Gist: http://nbviewer.ipython.org/gist/jannah/126896db28c620d48c47
 
 ## Extract Document Links (util/link_extraction/)
-Extracts document links from the corpus using RegExt
+Extracts document links from the corpus using RegEx
+
 Gist: http://nbviewer.ipython.org/gist/jannah/ada92933c5fe3fea4eee
 
 ## Document Interlinks Network Graph (util/link_extraction/)
 Draws a network graph of document interlinks
+
 Gist: http://nbviewer.ipython.org/gist/jannah/f1eb47e9401e6e8309db
 
 # Test Data Files

@@ -116,7 +116,7 @@
         {{ print_nested_list(collocations, 'Collocations', 'collocations')}}
     </div>
 <div id="document-content">
-    {{ print_text(summary, 'Summary (Manual)', 'document-summary')}}
+    {{ print_text(summary, 'Summary (NLP)', 'document-summary')}}
     {{ print_text(sumy, 'Summary (With Sumy)', 'document-sumy')}}
     {{ print_html(mun.get_doc_html_with_links(doc, 
                 '%s?doc_name='%url_for('show'), 

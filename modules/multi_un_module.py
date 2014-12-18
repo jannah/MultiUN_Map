@@ -7,8 +7,6 @@
 
 # In[1]:
 
-# from __future__ import absolute_import
-# from __future__ import division, unicode_literals
 import nltk
 import re
 import os
@@ -20,8 +18,9 @@ from progressbar import AnimatedMarker, Bar, BouncingBar,                       
 from nltk.corpus import brown
 
 
+## Backend Functions
 
-## Progress Bar Settings
+### Progress Bar Settings
 
 # In[2]:
 
@@ -32,7 +31,6 @@ def disable_pbars():
     show_pbars = False
 def is_show_pbars():
     global show_pbars
-#     print 'show pbars is ' , show_pbars
     return show_pbars
 
 
@@ -50,7 +48,7 @@ PATH_TO_FILES = os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_TXT)
 PATH_TO_XML_FILES =  os.path.abspath(os.path.join(F_PATH, '..', RELATIVE_PATH_TO_XML))
 
 
-## Fix Unicode and Incomplete Sentences
+### Fix Unicode and Incomplete Sentences
 
 # In[4]:
 
@@ -61,21 +59,19 @@ def fix_unicode(s):
         return text
     except:
         try:
-#             print 'encoding:', chardet.detect(s)['encoding']
             text = s.encode(chardet.detect(s)['encoding'])
             return text
         except Exception, e:
-#             print e
             try:
                 text = unidecode(s)
                 return text
-#                 f.write(sent)
             except Exception, e2:
-#                 print 'unidecode:', e2
                 print 'error: ', e2
                 print s
                 return text
                 pass
+            
+            
 INCOMPLETE_SUFFIXES = ['Mr.', 'Ms.', 'Ch.']
 def fix_incomplete_sentences(para):
     
@@ -91,49 +87,12 @@ def fix_incomplete_sentences(para):
     return sents
 
 
-### Load Files
+### Load XML Files
 
 # In[5]:
 
-def load_files(year = None, raw=True):
-    years = []
-    if year is None:
-        years = [ year for year in os.listdir(PATH_TO_FILES) if not '.txt' in year or '_OLD_' in year]
-    else:
-        years = [str(year)]
-    data = {}
-    pbar = ProgressBar(widgets=[SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(years)).start()
-    for i in range(len(years)):
-        y = years[i]
-        data.update(load_files_by_year(y, raw))
-        pbar.update(i+1)
-    pbar.finish()
-    return data
-
-
-def load_files_by_year(year, raw=True):
-    texts = []
-    file_type = 'raw' if raw else 'txt'
-    full_path = os.path.join(PATH_TO_FILES, year, file_type)        
-    files = os.listdir(full_path)
-    pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
-    for i in range(len(files)):
-        filename = os.path.join(full_path, files[i])
-        with open(filename, 'r') as f:
-            text = f.read()
-            text = text.decode('utf-8') #the regular text was throwing an exception complaining about ascii
-            texts.append(text) #Keeping each file in a seperate array element
-            pbar2.update(i+1)
-    pbar2.finish()
-    return texts    
-
-
-## Load XML Files
-
-# In[6]:
-
 from lxml import etree
-#data ={}
+
 def load_xml_files(year = None, path = PATH_TO_XML_FILES, show_pbar=None, content=True):
     show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     data = {}
@@ -158,7 +117,6 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = None, con
     show_pbar = show_pbar if show_pbar is not None else is_show_pbars()
     documents = {}
     full_path = os.path.join(path, year)    
-#     print full_path
     files = [fname for fname in os.listdir(full_path) if fname.endswith('.xml')]
     if show_pbar and len(files)>0:
         pbar2 = ProgressBar(widgets=[year, SimpleProgress(), Percentage(), Bar(), ETA()], maxval=len(files)).start()
@@ -171,6 +129,7 @@ def load_xml_files_by_year(year, path = PATH_TO_XML_FILES, show_pbar = None, con
     if show_pbar and len(files)>0:
         pbar2.finish()
     return documents
+
 
 def get_year_from_filename(filename):
     sep = '\\' if '\\' in filename else '/'
@@ -191,19 +150,16 @@ def load_xml_file(filename = None, content=True, year = None):
         f['content'] =  content
     return f
 
-# def flatten_document_structure_paragraphs(doc_dict):
-#     print 'flattening paragraphs'
-#     flat = [fix_incomplete_sentences(para) for doc in doc_dict for para in doc_dict[doc]['content']]
-#     return flat
-
  
 
 
-## Load Document Map
+## Document Search and Meta Data Loading
 
-# 
+### Load Document Map
 
-# In[7]:
+# Loads the document map file which contains all the meta data
+
+# In[6]:
 
 import json, zipfile
 RELATIVE_PATH_TO_MAP = 'util/MUN_MAP.zip'
@@ -215,14 +171,15 @@ MAP_FILE = 'map.json'
 DOC_ID_MAP = None
 
 
-# In[8]:
+# In[7]:
 
+#changes the map file to load a small subset
 def change_map_file(map_file=MAP_FILE):
     global MAP_FILE
     MAP_FILE = map_file
     print 'Chaged map file to ', map_file
     
-    
+#load the map    
 def load_doc_map(path_prefix=None):
     global MUN_MAP
     global DOC_ID_MAP
@@ -234,18 +191,14 @@ def load_doc_map(path_prefix=None):
             for k,doc in MUN_MAP.iteritems():
                 MUN_MAP[k]['attributes']['path'] = '%s/%s'%(path_prefix, MUN_MAP[k]['attributes']['path'])
 
-        
-#     return MUN_MAP
 
-
+               
 def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=None, filename = None, title=None):
     load_doc_map()
     if doc is not None and doc==doc_name:
         return True
     if doc_id is not None:
         return doc_id in DOC_ID_MAP
-#     if term is None and doc_name is not None:
-#         term = doc_name
     
     return (
                 term is not None and
@@ -267,7 +220,7 @@ def validate_search_term(doc, term=None, doc_name=None, doc_id = None, doc_n=Non
                 or doc_id == MUN_MAP[doc]['attributes']['id']
             )
 
-
+#loads the conteont of a given document
 def load_contents(docs):
     if docs is not None:
         for doc in docs:
@@ -278,6 +231,7 @@ def load_contents(docs):
     return docs
 
 
+#search for all document by a given attributes
 def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, limit = None, 
                   include_content = False):
     load_doc_map()
@@ -296,13 +250,11 @@ def get_documents(term = None, doc_name = None, doc_id=None, doc_n=None, filenam
                 counter+=1
             if limit is not None and counter>= limit:
                 break
-#     order =  sorted(result, key=lambda d: len(result[d]['links']),reverse=True )
-#     print order
-#     result = dict([(d, result[d]) for d in order])
     if include_content:
         result = load_contents(result)
     return result
 
+#search for the first document that meets the criteria
 def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename = None, title=None, include_content = False):
     load_doc_map()
     if doc_name and doc_name in MUN_MAP:
@@ -318,6 +270,7 @@ def get_document(term = None, doc_name = None, doc_id=None, doc_n=None, filename
     return result
 
 
+#get a list of all subjects
 def get_subjects(docs=None):
     load_doc_map()
     subjects = []
@@ -335,11 +288,13 @@ def get_subjects(docs=None):
     return subjects
 
 
+## Basic Document Processing
+
 ### Extract Paragraphs and Sentences
 
 # Functions to extract sentence or paragraph-sentence lists from document dictionary
 
-# In[9]:
+# In[8]:
 
 def extract_paragraphs(doc_dict, merge_paragraphs=False):
     if 'content' in doc_dict:
@@ -348,6 +303,7 @@ def extract_paragraphs(doc_dict, merge_paragraphs=False):
     if merge_paragraphs:
         flat = [" ".join(para) for para in flat]
     return flat
+
 
 def extract_sentences(doc_dict):
     if 'content' in doc_dict:
@@ -360,7 +316,7 @@ def extract_sentences(doc_dict):
 
 ### Sentence Tokenizers
 
-# In[10]:
+# In[9]:
 
 sent_tokenizer=nltk.data.load('tokenizers/punkt/english.pickle')
 def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
@@ -375,7 +331,7 @@ def parse_sentences_from_text(text, use_nltk_tokenizer = False ):
 
 ## Sentence Statistics
 
-# In[11]:
+# In[10]:
 
 def get_sentence_count(sentences):
     return len(sentences)
@@ -408,7 +364,7 @@ def print_sentence_statistics(sentences):
 # * pattern1: no punctuation
 # * pattern2: include punctuations
 
-# In[12]:
+# In[11]:
 
 from nltk.corpus import stopwords
 english_stopwords = stopwords.words('english')
@@ -457,7 +413,7 @@ def tokenize_sentence_text(sentences, alnum_only = False, alpha_only = False, re
 
 ## Word Statistics
 
-# In[13]:
+# In[12]:
 
 def get_word_count(tokens):
     return len(tokens)
@@ -483,6 +439,8 @@ def print_word_stats(tokens):
     print '%-32s' % 'longest word', '%-16s' % get_longest_word(tokens, ignore_join_words = False)
 
 
+## NLP Processing Functions
+
 ## Part of Speech Taggers
 
 # 
@@ -492,7 +450,7 @@ def print_word_stats(tokens):
 # 
 # I experimented with The regex tagger only support 100 groups max and the it won't deal with tokenized sentences
 
-# In[14]:
+# In[13]:
 
 #location/organization tagger
 def get_location_tagger_tags():
@@ -558,11 +516,11 @@ def tag_pos_sentences(tokenized_sentences, tagger=get_brown_tagger(), show_pbar=
 
 ## Text Chunker
 
-# My pride an joy chunker tries to do alot. I experimented heavily with it in previous assignments to ensure it captures complex objects. I am targeting 2 main classes:
+# I experimented heavily with it in previous assignments to ensure it captures complex objects. I am targeting 2 main classes:
 # * **PNS**: Proper nouns which in this case can be as long as 7 words for some UN organizations
 # * **VNS**: Verb noun subjects (or who did what)
 
-# In[15]:
+# In[14]:
 
 def remove_punctuation(text):
     return "".join(c for c in text if c not in string.punctuation)
@@ -662,269 +620,38 @@ def flatten_chunks(chunks, target='PNS'):
 # * Named Entities using a multi stage chunker
 # * Verb objects
 
-# In[16]:
-
+# In[15]:
 
 def process_chunks(sentences=None, sent_tokens=None, tagged_sentences = None,  remove_months = True, tagger = None, return_print = True):
- if not tagged_sentences:
-     sent_tokens = sent_tokens if sent_tokens else          tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
-     tagger = get_brown_tagger(include_location_tagger=True)
- tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger)
- #get the proper noun chunks from teh chunker
- nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
- nchunks = extract_target_from_chunks(nchunks, target='PNS')
- # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
- if remove_months:
-     import calendar
-     nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 
-                and not any(mn in chunk.split(' ') for mn in calendar.month_name)]
- 
- vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
- vchunks = extract_target_from_chunks(vchunks, target='VNS')
+    if not tagged_sentences:
+        sent_tokens = sent_tokens if sent_tokens else             tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
+        tagger = get_brown_tagger(include_location_tagger=True)
+    tagged_sentences = tagged_sentences if tagged_sentences else tag_pos_sentences(sent_tokens, tagger=tagger)
+    #get the proper noun chunks from teh chunker
+    nchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='PNS'), target = 'PNS')
+    nchunks = extract_target_from_chunks(nchunks, target='PNS')
+    # there are many month names mentioned in the FrewDist, I am removing them because I don' think they add much value
+    if remove_months:
+        import calendar
+        nchunks = [chunk for chunk in nchunks if len(remove_punctuation(chunk))>1 
+                   and not any(mn in chunk.split(' ') for mn in calendar.month_name)]
+    
+    vchunks = get_chunks(tagged_sentences, chunker=get_chunker(tag_set='brown', target='VNS'), target = 'VNS')
+    vchunks = extract_target_from_chunks(vchunks, target='VNS')
 #     vchunks = [chunk for chunk in vchunks if chunk not in nchunks]
- nchunks_fd = nltk.FreqDist(nchunks)
- vchunks_fd = nltk.FreqDist(vchunks)
- if return_print:
-     return print_FreqDists([nchunks_fd, vchunks_fd], titles=['Proper Nouns', 'Verb Objects'], csv=True)
- else:
-     return nchunks_fd.items(), vchunks_fd.items()
-
-
-## Collocations 
-
-# There are two collocation implementations here:
-# * word based: collocation of individual words
-# * chunk based: collocation using a whole chunker grammer element (e.g. PNS). This will treat the whole element as one words and generate collocation of other words with it. this helps especially when dealing with multi-words country or organization names
-# 
-# The output is four finders nbests:
-# (bigram, trigram) x (pmi, chi_sq)
-
-# In[28]:
-
-from nltk.collocations import *
-#find pure word frequency collocations
-#it doesn't matter whether I pass tagged sentences or not since I am focusing on words only
-def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_limit = 20):
-#     from nltk.collocations import *
-    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences,alpha_only = True,                                                                         remove_stopwords=True, use_pattern = 1)
-    word_tokens = [word for sent in sent_tokens for word in sent]
-#     print word_tokens[:5]
-    bigram_measures = nltk.collocations.BigramAssocMeasures()
-    trigram_measures = nltk.collocations.TrigramAssocMeasures()
-    finder = BigramCollocationFinder.from_words(word_tokens)
-    finder3 = TrigramCollocationFinder.from_words(word_tokens)
-    finder.apply_freq_filter(filter_limit)
-    finder3.apply_freq_filter(filter_limit)
-    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
-    f1= finder.nbest(bigram_measures.pmi, finder_limit)
-    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
-    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
-    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
-    return f1, f2,f3
-
-#get the colloations based on chunks    
-def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, chunks=None,
-                             target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
-
-    #I can pass pre-tagged sentences if needed
-    if tagger is None:
-        get_brown_tagger(include_location_tagger=True)
-    if sentences:
-        sent_tokens = tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
-        tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger)
-    if chunks is None:
-        chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
-        chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
-        flat_chunks = flatten_chunks(chunks, target=target)
-        flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
-        print flat_chunk_tokens
+    nchunks_fd = nltk.FreqDist(nchunks)
+    vchunks_fd = nltk.FreqDist(vchunks)
+    if return_print:
+        return print_FreqDists([nchunks_fd, vchunks_fd], titles=['Proper Nouns', 'Verb Objects'], csv=True)
     else:
-        chunks = [c for c,i in chunks]
-        flat_chunk_tokens = [token for flat_chunk in chunks for token in flat_chunk.split(' ')]
-        print flat_chunk_tokens
-    bigram_measures = nltk.collocations.BigramAssocMeasures()
-    trigram_measures = nltk.collocations.TrigramAssocMeasures()
-    finder = BigramCollocationFinder.from_words(flat_chunk_tokens)
-    finder3 = TrigramCollocationFinder.from_words(flat_chunk_tokens)
-    
-    #after some testing, I found that many collocations are numeric so I am filtering out non alpha words
-    #This filters out any pairs that don't included the target chunk grammer
-    finder.apply_ngram_filter(lambda (w1, t1), (w2,t2): target not in (t1,t2) or not w1.isalpha() or not w2.isalpha())
-    finder3.apply_ngram_filter(lambda (w1, t1), (w2,t2), (w3, t3):                                target not in (t1,t2,t3) or not w1.isalpha() or not w2.isalpha() or not w3.isalpha())
-    finder.apply_freq_filter(filter_limit)
-    finder3.apply_freq_filter(filter_limit)
-    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
-    f1= finder.nbest(bigram_measures.pmi, finder_limit)
-    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
-    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
-    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
-    return f1, f2,f3
+        return nchunks_fd.items(), vchunks_fd.items()
 
 
-
-## Frequent Terms
-
-# These modules help generate an ngram frequncy distribution. It takes n as an input to plut any number ngrams.
-# 
-# It also takes other options about the text (e.g. remove stopwords or lower case everything). 
-
-# In[18]:
-
-from nltk.stem.snowball import SnowballStemmer
-snowball_stemmer = SnowballStemmer("english")
-
-
-def get_normalized_word(token,stem_words=False, lower_case=False):
-    if stem_words and len(token)>1:
-        try:
-            return snowball_stemmer.stem(token)
-        except Exception, e:
-            print token, e
-            return token
-    elif lower_case:
-        return token.lower()
-    else:
-        return token
-    #I wanted to keep CAP words CAPs because the mostly reflect abbreviations but some common words appear as all caps in headers
-    '''if token.isupper(): 
-        return token
-    else:
-        return token.lower()
-        '''
-   
-    
-def get_normalzed_ngram(ngram, stem_words=False, lower_case=False):
-    return [get_normalized_word(word, stem_words, lower_case) for word in ngram]
-
-#it can take either tokeinzed or text sentences. the output is a frequency distribution of ngrams
-def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnum_only = False, remove_stopwords=False, stem_words = False, lower_case=False):
-    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=alnum_only, remove_stopwords=remove_stopwords, use_pattern = 2)
-    ngrams = [" ".join(get_normalzed_ngram(ngram, stem_words, lower_case))                         for sent in sent_tokens for ngram in nltk.ngrams(sent, ngram_length) ]
-    fd_ngrams = nltk.FreqDist(ngrams)
-    return fd_ngrams
-
-
-
-## Text Summarization
-
-### Manual Summerizations (TO DOCUMENT)
+### Named Entity Recognition
 
 # 
 
-# In[19]:
-
-SUMMARY_KEYWORDS_START=['in order to', 'thus', 'to sum up', 'finally', 'in conclusion', 'to conclude', 'to summerize', 'in summary', 'therefore'
-                'goal', 'the ultimate goal', 'finally']
-SUMMARY_KEYWORDS_BODY = ['goal', 'summar', 'conclu', 'goal',' aim','objective', 'decide', 'decision', 'focus', 'recommen', 'request']
-
-def get_document_summary(doc):
-    if 'content' not in doc:
-        doc = doc.itervalues().next()
-    # got the document title
-    
-    paragraphs = extract_paragraphs(doc)
-    sentences = extract_sentences(doc)
-    
-    #get first sentence if each paragraph that is not a heading
-    sent_first = [p[0] for p in paragraphs if not is_heading(p) and not p[0].startswith('(')]
-    sent_first_tokenized = tokenize_sentence_text(sent_first, remove_stopwords=True)
-    
-    #get title bigrams and trigrams
-    title = doc['scrape']['Title']
-    title_bigrams = get_frequent_ngrams(sentences=[title], ngram_length=2, remove_stopwords=True)
-    title_trigrams = get_frequent_ngrams(sentences=[title], ngram_length=3, remove_stopwords=True)
-    
-    # get bigrams and trigrams from document
-    bigrams = get_frequent_ngrams(sentences=sentences, ngram_length=2, remove_stopwords=True)
-    trigrams = get_frequent_ngrams(sentences=sentences, ngram_length=3, remove_stopwords=True)
-    
-    # get the first paragraph after specific headings
-    intro = get_after_heading('introduction', paragraphs)
-    summary = get_after_heading('summary', paragraphs)
-    conclusion = get_after_heading('conclusion', paragraphs)
-    
-    #extract features from the document
-    features = [(i,check_summary_features(sent_first[i], bigrams, trigrams, title_bigrams,title_trigrams)) 
-                for i in range(len(sent_first))]
-    
-    #sort the features by total
-    sorted_features = sorted(features, key=lambda (i,f): f['total'], reverse=True)
-    
-    #get top 10 sentences
-    top_features =sorted_features[:10]
-    top_sents = [ (i, r['sent']) for i, r in top_features
-                     if (len(intro)>0 and r['sent'] != intro[0][1][0])
-                     or (len(summary)>0 and r['sent'] != summary[0][1][0])
-                     or (len(summary)>0 and r['sent'] != summary[0][1][0])]
-    
-    #flattent the paragraphs
-    intro = [(i, " ".join(f)) for i,f in intro]
-    summary = [(i, " ".join(f)) for i,f in summary]
-    conclusion = [(i, " ".join(f)) for i,f in conclusion]
-    
-    
-    #combine
-    summary = intro  + top_sents + summary + conclusion
-    summary = sorted(summary)
-    return summary
-    
-    
-def check_summary_features(sent, bigrams, trigrams, title_bigrams, title_trigrams):
-    result={}
-#     result = {'in_title':0, 'tri':0, 'keyword':0, 'keyword_s':0} 
-    result['in_title_bigrams'] =sum([1 for bi, freq in title_bigrams.items()[:20] if bi.lower() in sent.lower()])
-    result['in_title_trigrams'] =sum([1 for tri, freq in title_trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
-    result['trigrams'] = sum([1 for tri, freq in trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
-    result['bigrams'] = sum([1 for bi, freq in bigrams.items()[:20] if tri.lower() in sent.lower()])
-    result['keyword_s'] = sum([1 for k in SUMMARY_KEYWORDS_START if k in sent.lower()])*3
-    result['keyword'] = sum([1 for k in SUMMARY_KEYWORDS_BODY if k in sent.lower()])
-    total = sum([v for v in result.itervalues()])
-#     print total
-    result['total'] = total
-    result['sent'] = sent
-    return result
-
-
-def get_after_heading(heading,paras):
-    for i in range(len(paras)):
-        p = paras[i]
-        if is_heading(p) and " ".join(p).lower()==heading.lower() and  i<len(paras):
-            return [(i+1, paras[i+1])] 
-    return []
-
-
-### Text Summarization using Sumy Package
-
-# 
-
-# In[20]:
-
-'''Sumy requires the following imports'''
-
-
-from sumy.parsers.html import HtmlParser
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer as Summarizer
-from sumy.nlp.stemmers import Stemmer
-from sumy.utils import get_stop_words
-
-def sumy_paragraphs(paragraphs, sentence_count=5):
-    text = "\n".join([" ".join(p) for p in paragraphs])
-    LANGUAGE = "english"  
-    parser = PlaintextParser.from_string(text,  Tokenizer(LANGUAGE))
-    stemmer = Stemmer(LANGUAGE)
-    summarizer = Summarizer(stemmer)
-    summarizer.stop_words = get_stop_words(LANGUAGE)
-    summary_of_doc = [str(sent) for sent in summarizer(parser.document, sentence_count)]
-    return summary_of_doc
-
-
-## Named Entity Recognition
-
-# 
-
-# In[21]:
+# In[16]:
 
 import string
 import pycountry as pc
@@ -1094,35 +821,252 @@ def ner_document_analysis(sentences, tagged_sentences, nchunks=None, summary=Fal
     return orgs,allcountries, nchunks
 
 
-## Processing NGrams
+### Frequent Terms
 
-# Generates 5 different frequency distributions:
-# * Unigrams (not very useful)
-# * Unigrams with stemming (not very useful)
-# * Bigrams (n=2)
-# * Trigrams (n=3)
-# * Quadgrams (n=4) 
+# These modules help generate an ngram frequncy distribution. It takes n as an input to plut any number ngrams.
 # 
-# All ngrams are alpha numeric, lowercase, and without stopwords
+# It also takes other options about the text (e.g. remove stopwords or lower case everything). 
 
-# In[22]:
+# In[17]:
 
-def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
-    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
-    unigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 1, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
-    unigrams_stem_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  1, alnum_only=True,                                     remove_stopwords=True, lower_case=True, stem_words=True)
-    bigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 2, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
-    trigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 3, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
-    quadgrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  4, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
-    return print_FreqDists([unigrams_fd,unigrams_stem_fd, bigrams_fd,trigrams_fd, quadgrams_fd],                           titles=['Unigram', 'Stemed Unigram', 'Bigrams', 'Trigrams', 'Quadgrams'], limit=limit, csv=True)
-  
+from nltk.stem.snowball import SnowballStemmer
+snowball_stemmer = SnowballStemmer("english")
 
 
-## Extract Document Links
+def get_normalized_word(token,stem_words=False, lower_case=False):
+    if stem_words and len(token)>1:
+        try:
+            return snowball_stemmer.stem(token)
+        except Exception, e:
+            print token, e
+            return token
+    elif lower_case:
+        return token.lower()
+    else:
+        return token
+    #I wanted to keep CAP words CAPs because the mostly reflect abbreviations but some common words appear as all caps in headers
+    '''if token.isupper(): 
+        return token
+    else:
+        return token.lower()
+        '''
+   
+    
+def get_normalzed_ngram(ngram, stem_words=False, lower_case=False):
+    return [get_normalized_word(word, stem_words, lower_case) for word in ngram]
 
-# Extracts document references from text
+#it can take either tokeinzed or text sentences. the output is a frequency distribution of ngrams
+def get_frequent_ngrams(sentences=None, sent_tokens=None, ngram_length = 1, alnum_only = False, remove_stopwords=False, stem_words = False, lower_case=False):
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=alnum_only, remove_stopwords=remove_stopwords, use_pattern = 2)
+    ngrams = [" ".join(get_normalzed_ngram(ngram, stem_words, lower_case))                         for sent in sent_tokens for ngram in nltk.ngrams(sent, ngram_length) ]
+    fd_ngrams = nltk.FreqDist(ngrams)
+    return fd_ngrams
 
-# In[23]:
+
+
+### Text Summarization
+
+#### NLP Summerizations (TO DOCUMENT)
+
+# Summarization Features
+#   * First paragraph following a key headings (Introduction, Summary, Conclusion).
+#   * We extracted the first sentence of each non-heading paragraph and applied the below features on them with different weights:
+#     * Number of key phrases: 
+#     ['in order to', 'thus', 'to sum up', 'finally', 'in conclusion', 'to conclude', 'to summarize', 'in summary', 'therefore', 'the ultimate goal', 'finally']
+#     * Number of keywords:
+#     ['goal', 'summar', 'conclu', 'goal',' aim','objective', 'decide', 'decision', 'focus', 'recommen', 'request']    
+#     * Number of trigrams from the title
+#     * Number of bigrams from the title
+#     * Number of top 10 document trigrams
+#     * Number of top 10 document bigrams
+# 
+
+# In[18]:
+
+SUMMARY_KEYWORDS_START=['in order to', 'thus', 'to sum up', 'finally', 'in conclusion', 'to conclude', 'to summarize', 'in summary', 'therefore'
+                'goal', 'the ultimate goal', 'finally']
+SUMMARY_KEYWORDS_BODY = ['goal', 'summar', 'conclu', 'goal',' aim','objective', 'decide', 'decision', 'focus', 'recommen', 'request']
+
+def get_document_summary(doc):
+    if 'content' not in doc:
+        doc = doc.itervalues().next()
+    # got the document title
+    
+    paragraphs = extract_paragraphs(doc)
+    sentences = extract_sentences(doc)
+    
+    #get first sentence if each paragraph that is not a heading
+    sent_first = [p[0] for p in paragraphs if not is_heading(p) and not p[0].startswith('(')]
+    sent_first_tokenized = tokenize_sentence_text(sent_first, remove_stopwords=True)
+    
+    #get title bigrams and trigrams
+    title = doc['scrape']['Title']
+    title_bigrams = get_frequent_ngrams(sentences=[title], ngram_length=2, remove_stopwords=True)
+    title_trigrams = get_frequent_ngrams(sentences=[title], ngram_length=3, remove_stopwords=True)
+    
+    # get bigrams and trigrams from document
+    bigrams = get_frequent_ngrams(sentences=sentences, ngram_length=2, remove_stopwords=True)
+    trigrams = get_frequent_ngrams(sentences=sentences, ngram_length=3, remove_stopwords=True)
+    
+    # get the first paragraph after specific headings
+    intro = get_after_heading('introduction', paragraphs)
+    summary = get_after_heading('summary', paragraphs)
+    conclusion = get_after_heading('conclusion', paragraphs)
+    
+    #extract features from the document
+    features = [(i,check_summary_features(sent_first[i], bigrams, trigrams, title_bigrams,title_trigrams)) 
+                for i in range(len(sent_first))]
+    
+    #sort the features by total
+    sorted_features = sorted(features, key=lambda (i,f): f['total'], reverse=True)
+    
+    #get top 10 sentences
+    top_features =sorted_features[:10]
+    top_sents = [ (i, r['sent']) for i, r in top_features
+                     if (len(intro)>0 and r['sent'] != intro[0][1][0])
+                     or (len(summary)>0 and r['sent'] != summary[0][1][0])
+                     or (len(summary)>0 and r['sent'] != summary[0][1][0])]
+    
+    #flattent the paragraphs
+    intro = [(i, " ".join(f)) for i,f in intro]
+    summary = [(i, " ".join(f)) for i,f in summary]
+    conclusion = [(i, " ".join(f)) for i,f in conclusion]
+    
+    
+    #combine
+    summary = intro  + top_sents + summary + conclusion
+    summary = sorted(summary)
+    return summary
+    
+    
+def check_summary_features(sent, bigrams, trigrams, title_bigrams, title_trigrams):
+    result={}
+#     result = {'in_title':0, 'tri':0, 'keyword':0, 'keyword_s':0} 
+    result['in_title_bigrams'] =sum([1 for bi, freq in title_bigrams.items()[:20] if bi.lower() in sent.lower()])
+    result['in_title_trigrams'] =sum([1 for tri, freq in title_trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
+    result['trigrams'] = sum([1 for tri, freq in trigrams.items()[:20] if tri.lower() in sent.lower()])*1.5
+    result['bigrams'] = sum([1 for bi, freq in bigrams.items()[:20] if tri.lower() in sent.lower()])
+    result['keyword_s'] = sum([1 for k in SUMMARY_KEYWORDS_START if k in sent.lower()])*3
+    result['keyword'] = sum([1 for k in SUMMARY_KEYWORDS_BODY if k in sent.lower()])
+    total = sum([v for v in result.itervalues()])
+#     print total
+    result['total'] = total
+    result['sent'] = sent
+    return result
+
+
+def get_after_heading(heading,paras):
+    for i in range(len(paras)):
+        p = paras[i]
+        if is_heading(p) and " ".join(p).lower()==heading.lower() and  i<len(paras):
+            return [(i+1, paras[i+1])] 
+    return []
+
+
+#### Text Summarization using Sumy Package
+
+# Sumy, a third package summarization library, has also been heavily used for the summarization section. Sumy provides several options for text summarization and allows us to quickly get an overview of the output based on the type of algorithm that the user selects. For that, Luhn and Edmundson showed some promising signs of the data. To provide an alternative summary, we used the Sumy python module to extract a summary of 5 paragraphs from the text. The library was simple to use but can be slow.
+
+# In[19]:
+
+'''Sumy requires the following imports'''
+
+
+from sumy.parsers.html import HtmlParser
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer as Summarizer
+from sumy.nlp.stemmers import Stemmer
+from sumy.utils import get_stop_words
+
+def sumy_paragraphs(paragraphs, sentence_count=5):
+    text = "\n".join([" ".join(p) for p in paragraphs])
+    LANGUAGE = "english"  
+    parser = PlaintextParser.from_string(text,  Tokenizer(LANGUAGE))
+    stemmer = Stemmer(LANGUAGE)
+    summarizer = Summarizer(stemmer)
+    summarizer.stop_words = get_stop_words(LANGUAGE)
+    summary_of_doc = [str(sent) for sent in summarizer(parser.document, sentence_count)]
+    return summary_of_doc
+
+
+### Collocations 
+
+# There are two collocation implementations here:
+# * word based: collocation of individual words
+# * chunk based: collocation using a whole chunker grammer element (e.g. PNS). This will treat the whole element as one words and generate collocation of other words with it. this helps especially when dealing with multi-words country or organization names
+# 
+# The output is four finders nbests:
+# (bigram, trigram) x (pmi, chi_sq)
+
+# In[20]:
+
+from nltk.collocations import *
+#find pure word frequency collocations
+#it doesn't matter whether I pass tagged sentences or not since I am focusing on words only
+def get_collocations(sentences=None, sent_tokens=None, filter_limit = 3, finder_limit = 20):
+#     from nltk.collocations import *
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences,alpha_only = True,                                                                         remove_stopwords=True, use_pattern = 1)
+    word_tokens = [word for sent in sent_tokens for word in sent]
+#     print word_tokens[:5]
+    bigram_measures = nltk.collocations.BigramAssocMeasures()
+    trigram_measures = nltk.collocations.TrigramAssocMeasures()
+    finder = BigramCollocationFinder.from_words(word_tokens)
+    finder3 = TrigramCollocationFinder.from_words(word_tokens)
+    finder.apply_freq_filter(filter_limit)
+    finder3.apply_freq_filter(filter_limit)
+    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
+    f1= finder.nbest(bigram_measures.pmi, finder_limit)
+    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
+    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
+    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
+    return f1, f2,f3
+
+#get the colloations based on chunks    
+def get_chunked_collocations(sentences=None,tagged_sentences=None, tagger=None, chunks=None,
+                             target='PNS', chunker = None, filter_limit = 3, finder_limit = 20):
+
+    #I can pass pre-tagged sentences if needed
+    if tagger is None:
+        get_brown_tagger(include_location_tagger=True)
+    if sentences:
+        sent_tokens = tokenize_sentence_text(sentences, alnum_only=False, remove_stopwords=False, use_pattern = 2)
+        tagged_sentences = tag_pos_sentences(sent_tokens, tagger=tagger)
+    if chunks is None:
+        chunker = chunker if chunker else get_chunker(tag_set='brown', target = target)
+        chunks = get_chunks(tagged_sentences,chunker=chunker, target = target)
+        flat_chunks = flatten_chunks(chunks, target=target)
+        flat_chunk_tokens = [token for flat_chunk in flat_chunks for token in flat_chunk]
+        print flat_chunk_tokens
+    else:
+        chunks = [c for c,i in chunks]
+        flat_chunk_tokens = [token for flat_chunk in chunks for token in flat_chunk.split(' ')]
+        print flat_chunk_tokens
+    bigram_measures = nltk.collocations.BigramAssocMeasures()
+    trigram_measures = nltk.collocations.TrigramAssocMeasures()
+    finder = BigramCollocationFinder.from_words(flat_chunk_tokens)
+    finder3 = TrigramCollocationFinder.from_words(flat_chunk_tokens)
+    
+    #after some testing, I found that many collocations are numeric so I am filtering out non alpha words
+    #This filters out any pairs that don't included the target chunk grammer
+    finder.apply_ngram_filter(lambda (w1, t1), (w2,t2): target not in (t1,t2) or not w1.isalpha() or not w2.isalpha())
+    finder3.apply_ngram_filter(lambda (w1, t1), (w2,t2), (w3, t3):                                target not in (t1,t2,t3) or not w1.isalpha() or not w2.isalpha() or not w3.isalpha())
+    finder.apply_freq_filter(filter_limit)
+    finder3.apply_freq_filter(filter_limit)
+    #print 4 finders (bigram, trigram) x (pmi, chi_sq)
+    f1= finder.nbest(bigram_measures.pmi, finder_limit)
+    f2= finder.nbest(bigram_measures.chi_sq, finder_limit)
+    f3= finder3.nbest(trigram_measures.pmi, finder_limit)
+    f4= finder3.nbest(trigram_measures.chi_sq, finder_limit)
+    return f1, f2,f3
+
+
+
+### Extract Document Links
+
+# Extracts document references from text using REGEX
+
+# In[21]:
 
 DOCUMENT_LINK_PATTERN = '([A-Z0-9._-]+/)+([A-z0-9._-]+)*'
 def extract_links_from_documents(docs, show_pbar=None):
@@ -1172,7 +1116,7 @@ def extract_links_from_text(text):
 
 # Parse the URL for the original PDF file and download
 
-# In[24]:
+# In[22]:
 
 from pattern.web import URL
 BASE_URL = 'http://documents-dds-ny.un.org/doc/'
@@ -1200,11 +1144,35 @@ def download_file_to(source, destination):
         f.write(d.read())
 
 
+### Processing NGrams
+
+# Generates 5 different frequency distributions:
+# * Unigrams (not very useful)
+# * Unigrams with stemming (not very useful)
+# * Bigrams (n=2)
+# * Trigrams (n=3)
+# * Quadgrams (n=4) 
+# 
+# All ngrams are alpha numeric, lowercase, and without stopwords
+
+# In[23]:
+
+def process_ngrams(sentences=None, sent_tokens=None, limit = 50):
+    sent_tokens = sent_tokens if sent_tokens else tokenize_sentence_text(sentences, alnum_only=True,                                                                           remove_stopwords=True, use_pattern = 2)
+    unigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 1, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    unigrams_stem_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  1, alnum_only=True,                                     remove_stopwords=True, lower_case=True, stem_words=True)
+    bigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 2, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    trigrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens, ngram_length = 3, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    quadgrams_fd = get_frequent_ngrams(sent_tokens=sent_tokens,ngram_length =  4, alnum_only=True,                                     remove_stopwords=True, lower_case=True)
+    return print_FreqDists([unigrams_fd,unigrams_stem_fd, bigrams_fd,trigrams_fd, quadgrams_fd],                           titles=['Unigram', 'Stemed Unigram', 'Bigrams', 'Trigrams', 'Quadgrams'], limit=limit, csv=True)
+  
+
+
 ## Printing Functions
 
 # These functions help print outputs nicely (e.g. multiple frequency distributions side by side in a table).
 
-# In[25]:
+# In[24]:
 
 
 def print_FreqDist(fd, limit =0):
@@ -1313,9 +1281,9 @@ def print_collocations_finders(finders, chunked=False):
     return output
 
 
-## Generate HTML
+### Generate HTML
 
-# In[26]:
+# In[25]:
 
 from IPython.display import HTML
 
@@ -1381,7 +1349,7 @@ def get_doc_html(doc):
     return html
 
 
-# In[26]:
+# In[25]:
 
 
 
